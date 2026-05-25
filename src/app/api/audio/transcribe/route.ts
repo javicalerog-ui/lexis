@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 
   const audio = form.get('audio');
-  if (!(audio instanceof File) && !(audio instanceof Blob)) {
+  if (!(audio instanceof Blob)) {
     return NextResponse.json({ error: 'audio_missing' }, { status: 400 });
   }
   if (audio.size > MAX_AUDIO_MB * 1024 * 1024) {
