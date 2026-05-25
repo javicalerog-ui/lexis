@@ -1,0 +1,121 @@
+.card {
+  display: block;
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface-glass);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  transition: all var(--dur-fast) var(--ease-out);
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  border-color: rgba(79, 142, 255, 0.35);
+  background: rgba(28, 36, 71, 0.7);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md), 0 0 24px rgba(79, 142, 255, 0.15);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-2);
+}
+
+.name {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--fg-0);
+}
+
+.status {
+  padding: 3px 9px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  border-radius: var(--r-full);
+  background: var(--bg-3);
+  color: var(--fg-2);
+}
+.status.active {
+  color: var(--success);
+  background: rgba(52, 211, 153, 0.12);
+}
+.status.paused {
+  color: var(--warning);
+  background: rgba(251, 191, 36, 0.12);
+}
+.status.done,
+.status.archived {
+  color: var(--fg-3);
+  background: rgba(120, 145, 220, 0.08);
+}
+
+.summary {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--fg-1);
+  margin-bottom: var(--s-3);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.summaryEmpty {
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--fg-3);
+  margin-bottom: var(--s-3);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 11px;
+  color: var(--fg-3);
+}
+
+.metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.metricN {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-bright);
+}
+.metricLabel {
+  letter-spacing: 0.04em;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  background: var(--fg-3);
+  border-radius: var(--r-full);
+}
+
+.date {
+  flex: 1;
+  letter-spacing: 0.02em;
+}
+
+.arrow {
+  font-size: 14px;
+  color: var(--fg-3);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.card:hover .arrow {
+  transform: translateX(3px);
+  color: var(--accent-bright);
+}

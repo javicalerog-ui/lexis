@@ -1,0 +1,48 @@
+{
+  "name": "lexis",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lexis — segundo cerebro personal. Captura, vectoriza y razona sobre tu vida.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "icons": "node scripts/generate-icons.mjs",
+    "db:push": "supabase db push",
+    "db:diff": "supabase db diff",
+    "db:reset": "supabase db reset",
+    "types": "supabase gen types typescript --local > src/types/database.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "date-fns": "^4.1.0",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^0.460.0",
+    "nanoid": "^5.0.0",
+    "next": "^14.2.0",
+    "openai": "^4.60.0",
+    "pdfjs-dist": "^4.7.76",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "resend": "^4.0.0",
+    "voyageai": "^0.0.4",
+    "web-push": "^3.6.7",
+    "xlsx": "^0.18.5",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/web-push": "^3.6.4",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
+    "sharp": "^0.33.0",
+    "typescript": "^5.5.0",
+    "undici": "^7.25.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

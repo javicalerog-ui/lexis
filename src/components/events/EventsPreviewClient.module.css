@@ -1,0 +1,285 @@
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-6);
+  color: var(--fg-2);
+}
+.spinner {
+  display: inline-flex;
+  gap: 4px;
+}
+.spinner span {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--accent-bright);
+  animation: bounce 1.1s ease-in-out infinite;
+}
+.spinner span:nth-child(2) { animation-delay: 0.16s; }
+.spinner span:nth-child(3) { animation-delay: 0.32s; }
+@keyframes bounce {
+  0%, 100% { opacity: 0.4; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-4px); }
+}
+.preview {
+  margin-top: var(--s-4);
+  max-width: 360px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+}
+
+.intro {
+  margin-bottom: var(--s-5);
+  padding: var(--s-4);
+  background: rgba(11, 15, 31, 0.4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font-size: 13.5px;
+  color: var(--fg-1);
+  line-height: 1.55;
+}
+.bulkActions {
+  margin-top: var(--s-2);
+  font-size: 12px;
+  color: var(--fg-3);
+}
+.linkBtn {
+  background: none;
+  border: none;
+  color: var(--accent-bright);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+.linkBtn:hover { text-decoration: underline; }
+.sep { margin: 0 8px; opacity: 0.4; }
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.card {
+  padding: var(--s-4);
+  background: var(--surface-glass);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  backdrop-filter: blur(12px);
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.cardSelected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(79, 142, 255, 0.25) inset;
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-2);
+  cursor: pointer;
+}
+.checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.titleInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--fg-0);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  padding: 4px 6px;
+  border-radius: var(--r-sm);
+}
+.titleInput:focus {
+  outline: 1px solid var(--accent);
+  background: rgba(11, 15, 31, 0.4);
+}
+.confTag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  padding: 2px 6px;
+  background: rgba(11, 15, 31, 0.5);
+  border-radius: var(--r-full);
+  border: 1px solid var(--line);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 4px 0;
+  font-size: 12.5px;
+}
+.label {
+  width: 60px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 500;
+}
+.value {
+  color: var(--fg-1);
+}
+.select {
+  background: rgba(11, 15, 31, 0.4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 4px 8px;
+  color: var(--fg-1);
+  font-size: 12px;
+  font-family: var(--font-ui);
+}
+.descBox {
+  margin-top: var(--s-2);
+  padding: var(--s-2);
+  background: rgba(11, 15, 31, 0.3);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  color: var(--fg-2);
+  line-height: 1.5;
+}
+
+.toolbar {
+  position: sticky;
+  bottom: var(--s-4);
+  margin-top: var(--s-5);
+  padding: var(--s-4);
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--r-md);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+@media (max-width: 540px) {
+  .toolbar { flex-direction: column; align-items: stretch; }
+}
+
+.toggleField {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--fg-1);
+}
+.hidden { display: none; }
+.switch {
+  width: 34px;
+  height: 18px;
+  background: var(--bg-3);
+  border-radius: var(--r-full);
+  position: relative;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.switchKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: var(--r-full);
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+.switchOn { background: var(--accent); }
+.switchOn .switchKnob { transform: translateX(16px); }
+.toggleDesc {
+  display: block;
+  font-size: 10.5px;
+  color: var(--fg-3);
+  margin-top: 2px;
+}
+
+.createBtn {
+  padding: 10px 18px;
+  background: var(--grad-accent);
+  color: white;
+  border: none;
+  border-radius: var(--r-full);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--glow-accent);
+  white-space: nowrap;
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+.createBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.createBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.successWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--s-6);
+  text-align: center;
+  gap: var(--s-3);
+}
+.checkBig {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  font-size: 32px;
+  background: var(--success);
+  color: white;
+  border-radius: var(--r-full);
+  box-shadow: 0 0 36px var(--success);
+}
+.successTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--fg-0);
+}
+.successHint { color: var(--fg-3); font-size: 12px; }
+.warn {
+  color: var(--warning);
+  font-size: 12px;
+}
+
+.errorWrap {
+  padding: var(--s-5);
+  text-align: center;
+}
+.errorText {
+  margin-bottom: var(--s-3);
+  padding: var(--s-3);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: var(--r-md);
+  color: var(--danger);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+.btn {
+  padding: 8px 16px;
+  background: var(--grad-accent);
+  color: white;
+  border: none;
+  border-radius: var(--r-full);
+  font-size: 12.5px;
+  cursor: pointer;
+}

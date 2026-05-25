@@ -1,0 +1,290 @@
+.card {
+  position: relative;
+  padding: var(--s-5) var(--s-5) var(--s-5);
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--r-xl);
+  margin-bottom: var(--s-8);
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 220px;
+  height: 220px;
+  background: var(--grad-accent-soft);
+  filter: blur(70px);
+  border-radius: var(--r-full);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.head {
+  position: relative;
+  margin-bottom: var(--s-5);
+}
+
+.headLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.glyph {
+  font-size: 22px;
+  background: var(--grad-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--fg-0);
+  margin-bottom: var(--s-1);
+}
+
+.sub {
+  font-size: 13px;
+  color: var(--fg-2);
+  line-height: 1.5;
+  max-width: 50ch;
+}
+
+/* ---------- Settings row ---------- */
+
+.settingsRow {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+
+.settingChip {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 4px 6px 4px 12px;
+  background: rgba(11, 15, 31, 0.55);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+}
+
+.settingKey {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 500;
+}
+
+.select {
+  padding: 4px 22px 4px 8px;
+  background: transparent;
+  color: var(--fg-0);
+  font-size: 12.5px;
+  font-family: var(--font-ui);
+  border: none;
+  border-radius: var(--r-sm);
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'><path d='M3 5l3 3 3-3' stroke='%238a93b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  cursor: pointer;
+}
+.select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 142, 255, 0.18);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 6px 14px 6px 8px;
+  background: rgba(11, 15, 31, 0.55);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  color: var(--fg-2);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.toggle:hover {
+  border-color: var(--line-strong);
+}
+
+.toggleDot {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--r-full);
+  background: var(--fg-3);
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.toggleOn {
+  background: var(--success);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+}
+
+/* ---------- Email row ---------- */
+
+.emailRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.emailLabel {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 500;
+}
+
+.emailValue {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-1);
+  padding: 3px 8px;
+  background: var(--bg-3);
+  border-radius: var(--r-sm);
+}
+
+.emailInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 6px 12px;
+  background: rgba(11, 15, 31, 0.7);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-sm);
+  color: var(--fg-0);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+.emailInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.15);
+}
+
+.smallBtn {
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--accent-bright);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: transparent;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.smallBtn:hover {
+  border-color: var(--accent);
+  background: rgba(79, 142, 255, 0.08);
+}
+
+.lastSent {
+  position: relative;
+  font-size: 11px;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  margin-bottom: var(--s-3);
+}
+
+.error {
+  position: relative;
+  padding: var(--s-2) var(--s-3);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: var(--r-sm);
+  color: var(--danger);
+  font-size: 12px;
+  margin-bottom: var(--s-3);
+}
+
+.success {
+  position: relative;
+  padding: var(--s-2) var(--s-3);
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: var(--r-sm);
+  color: var(--success);
+  font-size: 12px;
+  margin-bottom: var(--s-3);
+}
+
+/* ---------- Actions ---------- */
+
+.actions {
+  position: relative;
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+}
+
+.btnGhost,
+.btnPrimary {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-radius: var(--r-full);
+  transition: all var(--dur-fast) var(--ease-out);
+}
+
+.btnGhost {
+  border: 1px solid var(--line);
+  color: var(--fg-1);
+  background: transparent;
+}
+.btnGhost:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-bright);
+}
+.btnGhost:disabled {
+  opacity: 0.55;
+}
+
+.btnPrimary {
+  background: var(--grad-accent);
+  color: white;
+  box-shadow: var(--glow-accent);
+}
+.btnPrimary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 28px rgba(179, 71, 255, 0.45);
+}
+.btnPrimary:disabled {
+  opacity: 0.55;
+}
+
+.spin {
+  display: inline-flex;
+  gap: 3px;
+}
+.spin span {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: currentColor;
+  animation: bounce 1s ease-in-out infinite;
+}
+.spin span:nth-child(2) { animation-delay: 0.16s; }
+.spin span:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes bounce {
+  0%, 100% { opacity: 0.4; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+}

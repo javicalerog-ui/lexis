@@ -1,0 +1,307 @@
+.main {
+  min-height: 100dvh;
+  padding-bottom: var(--s-12);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--s-4) var(--s-5);
+  background: rgba(6, 8, 18, 0.7);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--line);
+}
+
+.back {
+  color: var(--fg-2);
+  font-size: 13px;
+}
+.back:hover {
+  color: var(--accent-bright);
+}
+
+.typePill {
+  padding: 3px 10px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  border-radius: var(--r-full);
+}
+
+.pill_person {
+  color: var(--accent-bright);
+  background: rgba(79, 142, 255, 0.12);
+}
+.pill_org {
+  color: var(--violet-bright);
+  background: rgba(179, 71, 255, 0.12);
+}
+.pill_place {
+  color: var(--success);
+  background: rgba(52, 211, 153, 0.12);
+}
+.pill_concept {
+  color: var(--warning);
+  background: rgba(251, 191, 36, 0.12);
+}
+.pill_product {
+  color: var(--fg-1);
+  background: var(--bg-3);
+}
+
+.content {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-5);
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  margin-bottom: var(--s-6);
+  animation: rise 480ms var(--ease-out) both;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--fg-0);
+  margin-bottom: var(--s-2);
+  background: linear-gradient(180deg, var(--fg-0), var(--fg-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.aliases {
+  font-size: 13px;
+  color: var(--fg-3);
+  margin-bottom: var(--s-3);
+  font-style: italic;
+}
+.aliases span {
+  color: var(--fg-2);
+  font-style: normal;
+}
+
+.heroMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 12px;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.heroMeta strong {
+  color: var(--accent-bright);
+  font-weight: 500;
+  font-size: 13px;
+}
+.dot {
+  width: 3px;
+  height: 3px;
+  background: var(--fg-3);
+  border-radius: var(--r-full);
+}
+
+/* ---------- Blocks ---------- */
+
+.block {
+  margin-top: var(--s-8);
+  animation: rise 480ms var(--ease-out) both;
+}
+.block:nth-child(3) { animation-delay: 60ms; }
+.block:nth-child(4) { animation-delay: 120ms; }
+.block:nth-child(5) { animation-delay: 180ms; }
+
+.blockTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fg-2);
+  margin-bottom: var(--s-3);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.blockDotAccent,
+.blockDotViolet,
+.blockDotMuted {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+}
+.blockDotAccent {
+  background: var(--accent);
+  box-shadow: var(--glow-accent);
+}
+.blockDotViolet {
+  background: var(--violet);
+  box-shadow: var(--glow-violet);
+}
+.blockDotMuted {
+  background: var(--fg-3);
+}
+
+/* ---------- Project chips ---------- */
+
+.projChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.projChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 6px 10px 6px 12px;
+  background: rgba(11, 15, 31, 0.5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  text-decoration: none;
+  color: var(--fg-1);
+  font-size: 12.5px;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.projChip:hover {
+  border-color: rgba(79, 142, 255, 0.4);
+  background: rgba(79, 142, 255, 0.06);
+  color: var(--fg-0);
+}
+
+.projName {
+  font-weight: 500;
+}
+
+.projStatus {
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: var(--r-sm);
+}
+.ps_active { color: var(--success); background: rgba(52, 211, 153, 0.1); }
+.ps_paused { color: var(--warning); background: rgba(251, 191, 36, 0.1); }
+.ps_archived { color: var(--fg-3); background: var(--bg-3); }
+
+.projCount {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+}
+
+/* ---------- Co-occurrences ---------- */
+
+.cooccList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.cooccChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 5px 12px 5px 8px;
+  background: rgba(11, 15, 31, 0.4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  text-decoration: none;
+  color: var(--fg-1);
+  font-size: 12px;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.cooccChip:hover {
+  border-color: rgba(179, 71, 255, 0.4);
+  color: var(--violet-bright);
+  background: rgba(179, 71, 255, 0.06);
+}
+
+.cooccDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+}
+.type_person { background: var(--accent); }
+.type_org { background: var(--violet); }
+.type_place { background: var(--success); }
+.type_concept { background: var(--warning); }
+.type_product { background: var(--fg-2); }
+
+.cooccCount {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+}
+
+/* ---------- Memory list ---------- */
+
+.memoryList {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.memoryItem {
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-glass);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.memoryMeta {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+  margin-bottom: var(--s-2);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.memorySource {
+  color: var(--accent-bright);
+  font-weight: 500;
+}
+
+.memoryDate {
+  color: var(--fg-3);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.memoryText {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg-1);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

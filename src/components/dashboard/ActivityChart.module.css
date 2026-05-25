@@ -1,0 +1,20 @@
+.wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  min-width: 480px;
+  height: auto;
+}
+
+.bar rect {
+  transition: opacity var(--dur-fast) var(--ease-out);
+  cursor: default;
+}
+.bar:hover rect {
+  fill: url(#actGradHover);
+}

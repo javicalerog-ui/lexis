@@ -1,0 +1,144 @@
+.starter {
+  padding: var(--s-6) var(--s-5);
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--r-xl);
+  margin-bottom: var(--s-6);
+  position: relative;
+  overflow: hidden;
+}
+
+.starter::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 200px;
+  height: 200px;
+  background: var(--grad-accent-soft);
+  filter: blur(60px);
+  border-radius: var(--r-full);
+  pointer-events: none;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+  position: relative;
+}
+
+.glyph {
+  font-size: 22px;
+  background: var(--grad-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-top: 2px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--fg-0);
+  margin-bottom: var(--s-1);
+}
+
+.sub {
+  font-size: 13px;
+  color: var(--fg-2);
+  line-height: 1.5;
+}
+
+.focusTabs {
+  display: flex;
+  gap: var(--s-1);
+  padding: 3px;
+  background: rgba(11, 15, 31, 0.5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  margin-bottom: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.tab,
+.tabActive {
+  flex: 1;
+  min-width: max-content;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-radius: var(--r-full);
+  color: var(--fg-2);
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.tab:hover {
+  color: var(--fg-0);
+}
+.tabActive {
+  background: var(--grad-accent);
+  color: white;
+  box-shadow: var(--glow-accent);
+}
+
+.select {
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
+  background: rgba(11, 15, 31, 0.7);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--fg-0);
+  font-size: 14px;
+  font-family: var(--font-ui);
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 5l3 3 3-3' stroke='%238a93b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+.select:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.12);
+}
+
+.startButton {
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  background: var(--grad-accent);
+  border-radius: var(--r-md);
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  box-shadow: var(--glow-accent);
+  transition: all var(--dur-fast) var(--ease-spring);
+}
+.startButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 28px rgba(179, 71, 255, 0.45);
+}
+.startButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+.startButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.error {
+  padding: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-3);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: var(--r-sm);
+  color: var(--danger);
+  font-size: 12px;
+}

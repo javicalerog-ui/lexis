@@ -1,0 +1,55 @@
+.card {
+  padding: var(--s-3) var(--s-4);
+  background: rgba(11, 15, 31, 0.55);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  transition: all var(--dur-fast) var(--ease-out);
+}
+
+.card:hover {
+  border-color: var(--line-strong);
+  background: rgba(19, 26, 50, 0.7);
+  transform: translateX(2px);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-2);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.type {
+  padding: 2px 8px;
+  background: var(--bg-3);
+  color: var(--accent-bright);
+  border-radius: var(--r-full);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.date {
+  color: var(--fg-3);
+  margin-right: auto;
+}
+
+.score {
+  --intensity: 0.5;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: color-mix(in oklab, var(--fg-3) calc((1 - var(--intensity)) * 100%), var(--accent-bright));
+  letter-spacing: 0;
+}
+
+.content {
+  color: var(--fg-1);
+  font-size: 13.5px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

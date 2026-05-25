@@ -1,0 +1,76 @@
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(120px, 28%) 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 12.5px;
+  color: var(--fg-1);
+}
+
+.glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--accent-bright);
+  border-radius: var(--r-sm);
+}
+
+.track {
+  position: relative;
+  height: 6px;
+  background: rgba(11, 15, 31, 0.6);
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  background: var(--grad-accent);
+  border-radius: var(--r-full);
+  box-shadow: 0 0 12px rgba(79, 142, 255, 0.35);
+  transition: width 480ms var(--ease-out);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-1);
+  letter-spacing: 0.02em;
+  font-weight: 500;
+  min-width: 64px;
+  text-align: right;
+}
+
+.share {
+  color: var(--fg-3);
+  font-weight: 400;
+}
+
+.empty {
+  font-size: 12px;
+  color: var(--fg-3);
+  font-style: italic;
+}

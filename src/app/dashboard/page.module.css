@@ -1,0 +1,353 @@
+.main {
+  min-height: 100dvh;
+  padding-bottom: var(--s-12);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  grid-template-columns: 80px 1fr 80px;
+  align-items: center;
+  padding: var(--s-4) var(--s-5);
+  background: rgba(6, 8, 18, 0.7);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--line);
+}
+
+.back {
+  color: var(--fg-2);
+  font-size: 13px;
+}
+.back:hover {
+  color: var(--accent-bright);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--fg-0);
+  text-transform: lowercase;
+}
+.titleAccent {
+  background: var(--grad-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.content {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+/* ---------- Hero metrics ---------- */
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--s-3);
+  animation: rise 480ms var(--ease-out) both;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-4);
+  background: var(--surface-glass);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+
+.metricAccent {
+  border-color: rgba(79, 142, 255, 0.35);
+}
+
+.metricAccent::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 140px;
+  height: 140px;
+  background: var(--grad-accent-soft);
+  filter: blur(50px);
+  border-radius: var(--r-full);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.metricN {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--fg-0);
+}
+
+.metricAccent .metricN {
+  background: var(--grad-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.metricNSmall {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.metricL {
+  position: relative;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 500;
+}
+
+.metricSub {
+  position: relative;
+  font-size: 11px;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+/* ---------- Velocity row ---------- */
+
+.velocityRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--s-2);
+  animation: rise 480ms var(--ease-out) 60ms both;
+}
+
+.velocityCard {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-3) var(--s-4);
+  background: rgba(11, 15, 31, 0.4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.velocityLabel {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.velocityValue {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--fg-0);
+  line-height: 1.1;
+}
+
+.velocityUnit {
+  font-size: 10.5px;
+  color: var(--fg-3);
+}
+
+/* ---------- Chart card ---------- */
+
+.chartCard {
+  padding: var(--s-5);
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--r-xl);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: rise 480ms var(--ease-out) 120ms both;
+}
+
+.chartHead {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.chartDot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: var(--r-full);
+  box-shadow: var(--glow-accent);
+}
+
+.chartTitle {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--fg-1);
+}
+
+/* ---------- Two-column subcards ---------- */
+
+.twoCol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--s-4);
+  animation: rise 480ms var(--ease-out) 180ms both;
+}
+
+.subCard,
+.subCardFull {
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface-glass);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.subCardFull {
+  animation: rise 480ms var(--ease-out) 240ms both;
+}
+
+.subHead {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.subDot,
+.subDotViolet {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+}
+.subDot { background: var(--accent); box-shadow: var(--glow-accent); }
+.subDotViolet { background: var(--violet); box-shadow: var(--glow-violet); }
+
+.subTitle {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--fg-1);
+}
+
+.empty {
+  font-size: 12.5px;
+  color: var(--fg-3);
+  font-style: italic;
+  padding: var(--s-3) 0;
+}
+
+/* ---------- Bar list (projects + entities) ---------- */
+
+.barList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.barRow {
+  width: 100%;
+}
+
+.barLink {
+  display: grid;
+  grid-template-columns: minmax(100px, 36%) 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 6px 8px;
+  text-decoration: none;
+  border-radius: var(--r-sm);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.barLink:hover {
+  background: var(--bg-2);
+}
+
+.barLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 13px;
+  color: var(--fg-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  flex-shrink: 0;
+}
+.type_person { background: var(--accent); }
+.type_org { background: var(--violet); }
+.type_place { background: var(--success); }
+.type_concept { background: var(--warning); }
+.type_product { background: var(--fg-2); }
+
+.barTrack {
+  position: relative;
+  height: 5px;
+  background: rgba(11, 15, 31, 0.6);
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+
+.barFill {
+  position: absolute;
+  inset: 0;
+  background: var(--grad-accent);
+  border-radius: var(--r-full);
+  box-shadow: 0 0 10px rgba(79, 142, 255, 0.3);
+  transition: width 480ms var(--ease-out);
+}
+
+.barFillViolet {
+  background: linear-gradient(135deg, var(--violet) 0%, var(--violet-bright) 100%);
+  box-shadow: 0 0 10px rgba(179, 71, 255, 0.3);
+}
+
+.barCount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-0);
+  font-weight: 500;
+  min-width: 32px;
+  text-align: right;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
