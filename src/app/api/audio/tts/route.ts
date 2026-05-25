@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
   try {
     const result = await synthesizeSpeech(body.text, { voice: body.voice });
-    return new NextResponse(result.audio, {
+    return new NextResponse(new Uint8Array(result.audio), {
       headers: {
         'Content-Type': result.content_type,
         'Content-Length': String(result.audio.length),
