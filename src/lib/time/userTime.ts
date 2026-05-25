@@ -140,7 +140,7 @@ export function nowInZone(timezone: string, atUtc: Date = new Date()): {
  * (1,3,5), rangos (1-5) y wildcards (*). Suficiente para reglas
  * tipo "0 17 * * 5" (viernes 17:00) o "30 7 * * 1" (lunes 7:30).
  *
- * NOTA: no soporta */N ni nombres (MON, JAN). Si quieres más,
+ * NOTA: no soporta "step N" ni nombres (MON, JAN). Si quieres más,
  * añade aquí. Por ahora reglas preset usan solo lo soportado.
  */
 export function cronMatchesNow(
