@@ -230,9 +230,9 @@ export function NextStepsPanel({ slug }: Props) {
                     <p className={styles.completing}>guardando…</p>
                   )}
 
-                  {isDone && status !== 'completing' && (
+                  {isDone && (
                     <p className={`${styles.statusTag} ${styles[`tag_${status}`]}`}>
-                      ✓ {STATUS_LABEL[status as 'done' | 'partial' | 'skipped']}
+                      ✓ {STATUS_LABEL[status]}
                     </p>
                   )}
 
