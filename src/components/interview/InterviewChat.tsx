@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { VoiceRecorder } from '@/components/audio/VoiceRecorder';
 import { PlayQuestionButton } from '@/components/audio/PlayQuestionButton';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './InterviewChat.module.css';
 
 interface Message {
@@ -65,13 +66,11 @@ export function InterviewChat({
     ]);
 
     try {
-      const res = await fetch(`/api/interview/${sessionId}`, {
+      const data = await fetchJson(`/api/interview/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userText }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
 
       setMessages((prev) => {
         const next = prev.filter((m) => m.id !== tempId);
@@ -109,11 +108,9 @@ export function InterviewChat({
     if (busy) return;
     setBusy(true);
     try {
-      const res = await fetch(`/api/interview/${sessionId}/complete`, {
+      await fetchJson(`/api/interview/${sessionId}/complete`, {
         method: 'POST',
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setStatus('completed');
       router.refresh();
     } catch (e) {

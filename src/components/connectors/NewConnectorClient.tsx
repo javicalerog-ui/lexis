@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './NewConnectorClient.module.css';
 
 interface ConfigField {
@@ -99,9 +100,9 @@ export function NewConnectorClient() {
 
   // Cargar adapters
   useEffect(() => {
-    fetch('/api/connectors?include_adapters=1')
-      .then((r) => r.json())
+    fetchJson('/api/connectors?include_adapters=1')
       .then((d) => setAdapters(d.available_adapters || []))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -150,8 +151,7 @@ export function NewConnectorClient() {
           provider: 'google',
           scopes: oauthInfo.required_scopes.join(','),
         });
-        const res = await fetch(`/api/credentials?${params.toString()}`);
-        const data = await res.json();
+        const data = await fetchJson(`/api/credentials?${params.toString()}`);
         setCredentials(data.credentials || []);
       } catch (e) {
         setError(String(e));
@@ -210,7 +210,7 @@ export function NewConnectorClient() {
     setCreating(true);
     setError(null);
     try {
-      const res = await fetch('/api/connectors', {
+      const data = await fetchJson('/api/connectors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -222,8 +222,6 @@ export function NewConnectorClient() {
           credentials_id: selectedCredentialsId,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
 
       const webhookUrl = data.webhook_secret
         ? `${window.location.origin}/api/connectors/${data.connector.id}/inbound`

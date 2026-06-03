@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './ConnectorDetailClient.module.css';
 
 interface Connector {
@@ -49,13 +50,10 @@ export function ConnectorDetailClient({ id }: { id: string }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [cRes, rRes] = await Promise.all([
-        fetch(`/api/connectors/${id}`),
-        fetch(`/api/connectors/${id}/runs?limit=20`),
+      const [cData, rData] = await Promise.all([
+        fetchJson(`/api/connectors/${id}`),
+        fetchJson(`/api/connectors/${id}/runs?limit=20`),
       ]);
-      const cData = await cRes.json();
-      const rData = await rRes.json();
-      if (!cRes.ok) throw new Error(cData.detail || cData.error);
       setConnector(cData.connector);
       setRuns(rData.runs || []);
     } catch (e) {
@@ -74,9 +72,7 @@ export function ConnectorDetailClient({ id }: { id: string }) {
     setRunning(true);
     setError(null);
     try {
-      const res = await fetch(`/api/connectors/${id}/run`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
+      await fetchJson(`/api/connectors/${id}/run`, { method: 'POST' });
       await load();
     } catch (e) {
       setError(String(e));
@@ -88,13 +84,11 @@ export function ConnectorDetailClient({ id }: { id: string }) {
   async function rotateSecret() {
     if (!confirm('¿Rotar el webhook secret? El secret actual dejará de funcionar inmediatamente.')) return;
     try {
-      const res = await fetch(`/api/connectors/${id}`, {
+      const data = await fetchJson(`/api/connectors/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rotate_webhook_secret: true }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setRotatedSecret(data.webhook_secret);
       await load();
     } catch (e) {
@@ -116,7 +110,7 @@ export function ConnectorDetailClient({ id }: { id: string }) {
   async function toggleEnabled() {
     if (!connector) return;
     try {
-      await fetch(`/api/connectors/${id}`, {
+      await fetchJson(`/api/connectors/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: !connector.enabled }),

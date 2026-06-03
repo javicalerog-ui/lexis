@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './DigestActions.module.css';
 
 type Cadence = 'weekly' | 'biweekly' | 'monthly';
@@ -53,13 +54,11 @@ export function DigestActions({ initialPrefs, userEmail }: Props) {
   async function savePrefs(patch: Partial<Prefs>) {
     setError(null);
     try {
-      const res = await fetch('/api/digest/preferences', {
+      await fetchJson('/api/digest/preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setPrefs((p) => ({ ...p, ...patch }));
     } catch (e) {
       setError(String(e));
@@ -72,7 +71,7 @@ export function DigestActions({ initialPrefs, userEmail }: Props) {
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetch('/api/digest/send', {
+      const data = await fetchJson('/api/digest/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -80,8 +79,6 @@ export function DigestActions({ initialPrefs, userEmail }: Props) {
           dry_run: true,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       router.push(`/digest/${data.digest_id}`);
     } catch (e) {
       setError(String(e));
@@ -97,13 +94,11 @@ export function DigestActions({ initialPrefs, userEmail }: Props) {
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetch('/api/digest/send', {
+      const data = await fetchJson('/api/digest/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cadence: prefs.cadence }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setSuccess(`Enviado a ${data.destination}`);
       setTimeout(() => router.push(`/digest/${data.digest_id}`), 800);
     } catch (e) {

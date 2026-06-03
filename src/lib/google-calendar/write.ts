@@ -86,7 +86,12 @@ async function getFreshCredentials(
   if (!withCalendar) {
     throw new Error('no_calendar_scope');
   }
-  return (await refreshIfNeeded(supabase, withCalendar as CredentialRow)) as CredentialRow;
+  // refreshIfNeeded usa AdapterCredentials (shape compatible: access_token,
+  // refresh_token, expires_at); cast vía unknown para puentear los dos tipos.
+  return (await refreshIfNeeded(
+    supabase,
+    withCalendar as unknown as Parameters<typeof refreshIfNeeded>[1]
+  )) as unknown as CredentialRow;
 }
 
 // ---------- Fetch helpers ----------

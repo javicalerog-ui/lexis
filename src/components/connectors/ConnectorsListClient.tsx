@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './ConnectorsListClient.module.css';
 
 interface Connector {
@@ -34,9 +35,7 @@ export function ConnectorsListClient() {
 
   async function load() {
     try {
-      const res = await fetch('/api/connectors');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
+      const data = await fetchJson('/api/connectors');
       setConnectors(data.connectors);
     } catch (e) {
       setError(String(e));

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useMediaRecorder } from '@/hooks/useMediaRecorder';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './VoiceRecorder.module.css';
 
 interface Props {
@@ -47,17 +48,24 @@ export function VoiceRecorder({
 
     setTranscribing(true);
     try {
+      // iOS Safari graba en mp4/aac (no webm). Whisper detecta el formato por
+      // la extensión del filename, así que la derivamos del mime real del blob.
+      const ext = blob.type.includes('mp4') || blob.type.includes('mpeg')
+        ? 'mp4'
+        : blob.type.includes('webm')
+          ? 'webm'
+          : blob.type.includes('ogg')
+            ? 'ogg'
+            : 'm4a';
       const form = new FormData();
-      form.append('audio', blob, 'recording.webm');
+      form.append('audio', blob, `recording.${ext}`);
       form.append('language', 'es');
       if (prompt) form.append('prompt', prompt);
 
-      const res = await fetch('/api/audio/transcribe', {
+      const data = await fetchJson<{ text: string }>('/api/audio/transcribe', {
         method: 'POST',
         body: form,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
 
       if (reviewBeforeSubmit) {
         setTranscript(data.text);

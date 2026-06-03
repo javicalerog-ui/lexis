@@ -42,14 +42,24 @@ export function SessionStarter({ projects, entities }: Props) {
         }
         payload.focus_id = focusId;
       }
+      // NO migrado a fetchJson: este endpoint puede devolver un status no-ok
+      // pero con session_id válido (se navega igualmente), así que necesitamos
+      // el body aun con !res.ok. Parseamos defensivamente para no reventar con
+      // "Unexpected token '<'" si llega HTML de error de plataforma.
       const res = await fetch('/api/interview/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error(`respuesta no-JSON (${res.status})`);
+      }
       if (!res.ok && !data.session_id) {
-        throw new Error(data.detail || data.error);
+        throw new Error(data.detail || data.error || `HTTP ${res.status}`);
       }
       router.push(`/interview/${data.session_id}`);
     } catch (e) {

@@ -54,9 +54,21 @@ export async function embed(
   }
 
   const json = (await res.json()) as VoyageResponse;
-  return json.data
+  const vecs = json.data
     .sort((a, b) => a.index - b.index)
     .map((d) => d.embedding);
+
+  // El schema pgvector es vector(1024). Si el modelo/dim devuelven otra cosa,
+  // el INSERT fallaría con un error críptico de dimensión: fallar aquí, claro.
+  for (const v of vecs) {
+    if (v.length !== DIMENSIONS) {
+      throw new Error(
+        `Voyage devolvió embeddings de ${v.length} dims, esperado ${DIMENSIONS}. ` +
+          `Revisa VOYAGE_MODEL (${MODEL}) y VOYAGE_DIMENSIONS.`
+      );
+    }
+  }
+  return vecs;
 }
 
 export async function embedOne(

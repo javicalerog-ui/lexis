@@ -110,7 +110,8 @@ export async function POST(
               .update({
                 due_at: new Date(new Date(ev.due_at).getTime() + days * 86400_000).toISOString(),
               })
-              .eq('id', eventId);
+              .eq('id', eventId)
+              .eq('user_id', user.id);
             sideEffects.push({ event_snoozed: eventId, days });
           }
         }
@@ -126,7 +127,8 @@ export async function POST(
               responded_at: new Date().toISOString(),
               response: { action: 'cancel', via: 'agent_action' },
             })
-            .eq('id', eventId);
+            .eq('id', eventId)
+            .eq('user_id', user.id);
           sideEffects.push({ event_cancelled: eventId });
         }
         break;

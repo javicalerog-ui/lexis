@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import type { Filters, EnrichedMemory } from '@/lib/search/filters';
 import { SearchFilters } from '@/components/search/SearchFilters';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './TimelineClient.module.css';
 
 interface Props {
@@ -43,7 +44,7 @@ export function TimelineClient({ projects, entities }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/timeline', {
+        const data = await fetchJson('/api/timeline', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -52,8 +53,6 @@ export function TimelineClient({ projects, entities }: Props) {
             limit: 40,
           }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || data.error);
 
         setItems((prev) =>
           resetCursor ? data.items : [...prev, ...data.items]

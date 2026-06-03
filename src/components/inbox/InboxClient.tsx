@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { VoiceRecorder } from '@/components/audio/VoiceRecorder';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './InboxClient.module.css';
 
 interface QuickReply {
@@ -71,8 +72,7 @@ export function InboxClient({
 
   async function refresh() {
     try {
-      const res = await fetch('/api/agent-actions');
-      const data = await res.json();
+      const data = await fetchJson('/api/agent-actions');
       setActions(data.actions || []);
     } catch (e) {
       setError(String(e));
@@ -86,7 +86,7 @@ export function InboxClient({
       const target = actions.find((a) => a.id === actionId);
       if (qr.action === 'open_route' && target?.open_route) {
         // Marcamos como respondida con esa acción
-        await fetch(`/api/agent-actions/${actionId}/respond`, {
+        await fetchJson(`/api/agent-actions/${actionId}/respond`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: qr.action, payload: qr.payload || {} }),
@@ -95,13 +95,11 @@ export function InboxClient({
         return;
       }
 
-      const res = await fetch(`/api/agent-actions/${actionId}/respond`, {
+      await fetchJson(`/api/agent-actions/${actionId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: qr.action, payload: qr.payload || {} }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       await refresh();
     } catch (e) {
       setError(String(e));
@@ -132,7 +130,7 @@ export function InboxClient({
     if (!voiceTarget) return;
     setBusy(voiceTarget); setError(null);
     try {
-      const res = await fetch(`/api/agent-actions/${voiceTarget}/respond`, {
+      await fetchJson(`/api/agent-actions/${voiceTarget}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -140,8 +138,6 @@ export function InboxClient({
           voice_transcript: text,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setVoiceTarget(null);
       await refresh();
     } catch (e) {

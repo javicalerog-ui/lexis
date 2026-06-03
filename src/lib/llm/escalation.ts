@@ -6,7 +6,8 @@
 import type { LLMCallOptions, LLMResponse, LLMTier } from '@/types/domain';
 import { callOpenRouter, modelFor, type OpenRouterMessage } from './openrouter';
 
-const THRESHOLD = Number(process.env.LLM_ESCALATION_THRESHOLD || 0.7);
+const _rawThreshold = Number(process.env.LLM_ESCALATION_THRESHOLD);
+const THRESHOLD = Number.isFinite(_rawThreshold) ? _rawThreshold : 0.7;
 
 export async function chat(
   userPrompt: string,
@@ -90,5 +91,7 @@ function extractConfidence<T>(
   if (!obj || !field) return 1; // sin campo de confianza → siempre aceptar
   const v = obj[field];
   if (typeof v === 'number') return v;
-  return 0;
+  // Campo ausente o no numérico → no penalizar (aceptar Fast, evita escalar
+  // a Deep por una omisión del modelo y disparar coste).
+  return 1;
 }

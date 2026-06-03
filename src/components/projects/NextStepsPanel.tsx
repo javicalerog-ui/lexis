@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './NextStepsPanel.module.css';
 
 interface NextStep {
@@ -61,13 +62,11 @@ export function NextStepsPanel({ slug }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/projects/${slug}/next-steps`, {
+      const data = await fetchJson(`/api/projects/${slug}/next-steps`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(question.trim() ? { question } : {}),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setResult(data);
       setStepStatus({});
     } catch (e) {
@@ -92,7 +91,7 @@ export function NextStepsPanel({ slug }: Props) {
     setActiveNoteIdx(null);
 
     try {
-      const res = await fetch(`/api/projects/${slug}/next-steps/complete`, {
+      await fetchJson(`/api/projects/${slug}/next-steps/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -101,8 +100,6 @@ export function NextStepsPanel({ slug }: Props) {
           status: pendingStatus,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setStepStatus((prev) => ({ ...prev, [activeNoteIdx!]: pendingStatus }));
     } catch (e) {
       setError(String(e));

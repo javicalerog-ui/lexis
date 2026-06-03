@@ -44,3 +44,4 @@ supabase/.temp
 _bundle_migrations.sql
 dev.log
 npm-install.log
+vercel-env-paste.txt

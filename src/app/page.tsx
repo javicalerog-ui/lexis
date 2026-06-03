@@ -9,6 +9,7 @@ import { MessageList, type Message } from '@/components/chat/MessageList';
 import { parsePdf } from '@/lib/ingestion/pdf';
 import { parseXlsx } from '@/lib/ingestion/xlsx';
 import { parseMarkdown } from '@/lib/ingestion/markdown';
+import { fetchJson } from '@/lib/fetch-json';
 import type { MemorySearchResult, SourceType } from '@/types/domain';
 import { nanoid } from 'nanoid';
 import styles from './page.module.css';
@@ -34,13 +35,14 @@ export default function HomePage() {
     pushMessage({ id: nanoid(), kind: 'user_input', text });
     setBusy(true);
     try {
-      const res = await fetch('/api/capture', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source_type: 'text', raw_text: text }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
+      const data = await fetchJson<{ summary: string; confidence: number }>(
+        '/api/capture',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source_type: 'text', raw_text: text }),
+        }
+      );
       pushMessage({
         id: nanoid(),
         kind: 'system',
@@ -105,18 +107,19 @@ export default function HomePage() {
         throw new Error(`Tipo de archivo no soportado: .${ext}`);
       }
 
-      const res = await fetch('/api/capture', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source_type: sourceType,
-          raw_text: rawText,
-          source_uri: sourceUri,
-          source_metadata: sourceMetadata,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
+      const data = await fetchJson<{ summary: string; confidence: number }>(
+        '/api/capture',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source_type: sourceType,
+            raw_text: rawText,
+            source_uri: sourceUri,
+            source_metadata: sourceMetadata,
+          }),
+        }
+      );
       pushMessage({
         id: nanoid(),
         kind: 'system',
@@ -135,13 +138,14 @@ export default function HomePage() {
     pushMessage({ id: nanoid(), kind: 'user_input', text: query });
     setBusy(true);
     try {
-      const res = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, match_count: 8 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
+      const data = await fetchJson<{ results: MemorySearchResult[] }>(
+        '/api/search',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, match_count: 8 }),
+        }
+      );
       const results = data.results as MemorySearchResult[];
       pushMessage({
         id: nanoid(),

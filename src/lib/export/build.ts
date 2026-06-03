@@ -37,7 +37,7 @@ export interface ExportResult {
 const PAGE_SIZE = 1000;
 
 async function fetchAll<T>(
-  builder: (from: number, to: number) => Promise<{ data: T[] | null; error: any }>
+  builder: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>
 ): Promise<T[]> {
   const all: T[] = [];
   let from = 0;
@@ -58,6 +58,9 @@ export async function buildExport(
   filters: ExportFilters = {}
 ): Promise<ExportResult> {
   const exportedAt = new Date().toISOString();
+  // El select con campos dinámicos (embedding opcional) no es tipable de forma
+  // estática por supabase-js; el filtrado por user_id + RLS garantiza la seguridad.
+  const db = supabase as any;
 
   // 1. Memories (con o sin embeddings)
   const memoryFields = filters.include_embeddings
@@ -65,7 +68,7 @@ export async function buildExport(
     : 'id, user_id, content, summary, source_type, source_uri, source_metadata, captured_at, ingested_at, status';
 
   const memories = await fetchAll((from, to) => {
-    let q = supabase
+    let q = db
       .from('memories')
       .select(memoryFields)
       .eq('user_id', userId)
@@ -81,7 +84,7 @@ export async function buildExport(
 
   // 2. Projects y entidades del user
   const projects = await fetchAll((from, to) =>
-    supabase
+    db
       .from('projects')
       .select(
         'id, user_id, name, slug, description, status, rolling_summary, rolling_next_steps, last_activity_at, rolling_summary_updated_at, created_at'
@@ -92,7 +95,7 @@ export async function buildExport(
   );
 
   const entities = await fetchAll((from, to) =>
-    supabase
+    db
       .from('entities')
       .select(
         'id, user_id, name, entity_type, aliases, attributes, key_facts, rolling_summary, rolling_summary_updated_at, summary_payload, interaction_count, last_seen_at, created_at'
@@ -149,7 +152,7 @@ export async function buildExport(
   // 4. Entrevistas (opcional)
   if (filters.include_interviews) {
     const sessions = await fetchAll((from, to) => {
-      let q = supabase
+      let q = db
         .from('interview_sessions')
         .select('*')
         .eq('user_id', userId)
@@ -183,7 +186,7 @@ export async function buildExport(
   // 5. Digests (opcional)
   if (filters.include_digests) {
     const digests = await fetchAll((from, to) => {
-      let q = supabase
+      let q = db
         .from('digests')
         .select(
           'id, user_id, period_start, period_end, cadence, payload, metrics, status, sent_at, sent_to, model_used, generated_at'

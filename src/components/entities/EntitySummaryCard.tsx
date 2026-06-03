@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './EntitySummaryCard.module.css';
 
 interface KeyFacts {
@@ -67,11 +68,9 @@ export function EntitySummaryCard({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/entities/${entityId}/refresh-summary`, {
+      const data = await fetchJson(`/api/entities/${entityId}/refresh-summary`, {
         method: 'POST',
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       if (data.summary) {
         setPayload({
           summary: data.summary,

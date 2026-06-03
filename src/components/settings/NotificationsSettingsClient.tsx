@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './NotificationsSettingsClient.module.css';
 
 interface UserSettings {
@@ -63,7 +64,10 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
-  const out = new Uint8Array(rawData.length);
+  // Respaldamos en un ArrayBuffer explícito para que el tipo sea
+  // Uint8Array<ArrayBuffer> (no ArrayBufferLike), asignable a BufferSource.
+  const buffer = new ArrayBuffer(rawData.length);
+  const out = new Uint8Array(buffer);
   for (let i = 0; i < rawData.length; i++) out[i] = rawData.charCodeAt(i);
   return out;
 }
@@ -104,13 +108,11 @@ export function NotificationsSettingsClient({
   async function patchSettings(patch: Partial<UserSettings>) {
     setBusy(true); setError(null); setMsg(null);
     try {
-      const res = await fetch('/api/user-settings', {
+      const data = await fetchJson('/api/user-settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setSettings(data.settings);
       setMsg('Guardado');
       setTimeout(() => setMsg(null), 1800);
@@ -141,7 +143,7 @@ export function NotificationsSettingsClient({
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
       });
       const subJson = sub.toJSON();
       const res = await fetch('/api/push/subscribe', {

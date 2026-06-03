@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './EventsPreviewClient.module.css';
 
 interface EventDraft {
@@ -51,16 +52,11 @@ export function EventsPreviewClient() {
       setLoading(false);
       return;
     }
-    fetch('/api/events/from-image', {
+    fetchJson('/api/events/from-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image_url: imageUrl }),
     })
-      .then(async (r) => {
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.detail || d.error);
-        return d;
-      })
       .then((data) => {
         if (!data.is_calendar_view) {
           setError(data.message || 'La imagen no parece una vista de calendario.');
@@ -100,7 +96,7 @@ export function EventsPreviewClient() {
     setCreating(true);
     setError(null);
     try {
-      const res = await fetch('/api/events', {
+      const data = await fetchJson('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,8 +114,6 @@ export function EventsPreviewClient() {
           })),
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setResult({ count: data.inserted_count, errors: data.error_count });
       setTimeout(() => router.push('/feed'), 2000);
     } catch (e) {

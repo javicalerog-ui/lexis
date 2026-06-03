@@ -1,12 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Bootstrap del proyecto: el delivery original tiene varios errores TS strict
-  // (TS 5.5+ vs codigo que se escribio asumiendo tipos mas laxos). Los iremos
-  // limpiando despues. La app compila a JS valido y funciona en runtime.
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // Typecheck estricto restaurado tras la auditoría (los 7 errores TS del
+  // delivery están arreglados). ESLint sí queda fuera del build: sus reglas
+  // son estilísticas y no deben bloquear un deploy.
   eslint: {
     ignoreDuringBuilds: true,
   },

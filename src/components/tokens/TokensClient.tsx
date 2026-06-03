@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './TokensClient.module.css';
 
 interface Token {
@@ -41,9 +42,7 @@ export function TokensClient() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/tokens');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
+      const data = await fetchJson('/api/tokens');
       setTokens(data.tokens);
     } catch (e) {
       setError(String(e));
@@ -77,13 +76,11 @@ export function TokensClient() {
         ? new Date(Date.now() + expiresInDays * 86400_000).toISOString()
         : null;
 
-      const res = await fetch('/api/tokens', {
+      const data = await fetchJson('/api/tokens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), scopes, expires_at }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
 
       setJustCreated({ plain: data.plain_text, name: data.token.name });
       setName('');
@@ -102,9 +99,7 @@ export function TokensClient() {
   async function revokeToken(t: Token) {
     if (!confirm(`Revocar el token "${t.name}"? Esta acción no se puede deshacer.`)) return;
     try {
-      const res = await fetch(`/api/tokens/${t.id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
+      await fetchJson(`/api/tokens/${t.id}`, { method: 'DELETE' });
       await load();
     } catch (e) {
       setError(String(e));

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './ProactiveRulesClient.module.css';
 
 interface Rule {
@@ -70,13 +71,11 @@ export function ProactiveRulesClient({
   async function toggleRule(id: string, enabled: boolean) {
     setBusy(true); setError(null);
     try {
-      const res = await fetch(`/api/proactive-rules/${id}`, {
+      const data = await fetchJson(`/api/proactive-rules/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
       setRules((prev) => prev.map((r) => (r.id === id ? data.rule : r)));
     } catch (e) {
       setError(String(e));
@@ -89,9 +88,7 @@ export function ProactiveRulesClient({
     if (!confirm('¿Borrar esta regla?')) return;
     setBusy(true); setError(null);
     try {
-      const res = await fetch(`/api/proactive-rules/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
+      await fetchJson(`/api/proactive-rules/${id}`, { method: 'DELETE' });
       setRules((prev) => prev.filter((r) => r.id !== id));
     } catch (e) {
       setError(String(e));
@@ -131,24 +128,33 @@ export function ProactiveRulesClient({
       if (opts.disablePresetId) qs.set('disable_preset_id', opts.disablePresetId);
       const url = '/api/proactive-rules' + (qs.toString() ? `?${qs}` : '');
 
+      // NO migrado a fetchJson: el path 409 necesita el body (data.conflict)
+      // para mostrar el diálogo de conflicto. Comprobamos status ANTES de
+      // parsear y parseamos el cuerpo de forma defensiva para no reventar con
+      // "Unexpected token '<'" si la plataforma devuelve HTML de error.
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error(`respuesta no-JSON (${res.status})`);
+      }
 
       if (res.status === 409 && data.conflict) {
         setConflict(data.conflict);
         setBusy(false);
         return;
       }
-      if (!res.ok) throw new Error(data.detail || data.error);
+      if (!res.ok) throw new Error(data.detail || data.error || `HTTP ${res.status}`);
 
       // Si deshabilitamos un preset, refrescamos lista entera
       if (opts.disablePresetId) {
-        const listRes = await fetch('/api/proactive-rules');
-        const listData = await listRes.json();
+        const listData = await fetchJson('/api/proactive-rules');
         setRules(listData.rules || []);
       } else {
         setRules((prev) => [...prev, data.rule]);

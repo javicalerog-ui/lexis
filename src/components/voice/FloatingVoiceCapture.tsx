@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { VoiceRecorder } from '@/components/audio/VoiceRecorder';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './FloatingVoiceCapture.module.css';
 
 /**
@@ -65,7 +66,7 @@ export function FloatingVoiceCapture() {
     if (!text.trim()) return;
     setStatus('ingesting');
     try {
-      const res = await fetch('/api/capture', {
+      await fetchJson('/api/capture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -74,8 +75,6 @@ export function FloatingVoiceCapture() {
           source_metadata: { origin: 'fab_voice' },
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error || `HTTP ${res.status}`);
       setStatus('success');
     } catch (e) {
       setErrorMsg(String(e));

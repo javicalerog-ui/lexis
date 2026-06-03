@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { fetchJson } from '@/lib/fetch-json';
 import styles from './page.module.css';
 
 type Priority = 'now' | 'this_week' | 'soon';
@@ -59,9 +60,7 @@ export default function FeedPage() {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/feed');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error);
+      const data = await fetchJson('/api/feed');
       setFeed(data);
     } catch (e) {
       setError(String(e));
@@ -262,8 +261,7 @@ function UpcomingEventsSection() {
       to: in14d.toISOString(),
       limit: '20',
     });
-    fetch(`/api/events?${qs}`)
-      .then((r) => r.json())
+    fetchJson(`/api/events?${qs}`)
       .then((d) => setEvents(d.events ?? []))
       .catch(() => {})
       .finally(() => setLoaded(true));
