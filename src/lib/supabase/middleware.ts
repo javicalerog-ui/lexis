@@ -26,14 +26,14 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
 
   const pathname = request.nextUrl.pathname;
   const isAuthRoute = pathname.startsWith('/auth');
   const isApiAuth = pathname.startsWith('/api/auth');
   const isPublic = isAuthRoute || isApiAuth || pathname === '/manifest.json';
 
-  if (!user && !isPublic) {
+  if (!session && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
     url.searchParams.set('next', pathname);
