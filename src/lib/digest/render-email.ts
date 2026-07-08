@@ -39,7 +39,11 @@ function fmtDate(iso: string): string {
 
 function periodLabel(start: string, end: string, cadence: string): string {
   const cadenceLabel =
-    cadence === 'weekly' ? 'Semana' : cadence === 'biweekly' ? 'Quincena' : 'Mes';
+    cadence === 'weekly'
+      ? 'Semana'
+      : cadence === 'biweekly'
+        ? 'Quincena'
+        : 'Mes';
   return `${cadenceLabel} ${fmtDate(start)} → ${fmtDate(end)}`;
 }
 
@@ -49,7 +53,7 @@ export function renderDigestEmail(
 ): { subject: string; html: string; text: string } {
   const { payload, metrics, period_start, period_end } = digest;
   const appUrl = options.appUrl || APP_URL;
-  const cadence = digest.period_end > digest.period_start ? 'weekly' : 'weekly';
+  const cadence = digest.cadence;
 
   const subject = `Lexis · ${payload.headline.slice(0, 60)}`;
 

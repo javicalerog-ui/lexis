@@ -43,13 +43,17 @@ export async function classify(
   supabase: SupabaseClient,
   input: ClassifierInput
 ): Promise<ClassifierDecision> {
-  // 1. Vecinas más similares
+  // 1. Vecinas más similares. p_user_id explícito: bajo service client
+  // (API v1 /capture, crons) auth.uid() es NULL y sin él la RPC no vería
+  // vecinas (el clasificador jamás deduplicaría). Requiere la migración
+  // hardening2 (20260706000000).
   const { data: neighbors, error } = await supabase.rpc('search_memories', {
     query_embedding: input.candidate_embedding,
     match_count: CANDIDATES_TOP_K,
     min_similarity: 0.5,
     project_filter: input.project_filter ?? null,
     entity_filter: null,
+    p_user_id: input.user_id,
   });
 
   if (error) {

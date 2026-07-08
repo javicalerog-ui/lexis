@@ -57,6 +57,7 @@ export interface GeneratedDigest {
   metrics: DigestMetrics;
   period_start: string;
   period_end: string;
+  cadence: 'weekly' | 'biweekly' | 'monthly';
   model_used: string;
   generated_at: string;
 }
@@ -240,6 +241,7 @@ export async function generateDigest(
       metrics,
       period_start: startIso,
       period_end: endIso,
+      cadence,
       model_used: 'shortcircuit',
       generated_at: new Date().toISOString(),
     };
@@ -339,6 +341,7 @@ Genera el digest editorial.`;
     metrics,
     period_start: startIso,
     period_end: endIso,
+    cadence,
     model_used: resp.model_used,
     generated_at: new Date().toISOString(),
   };

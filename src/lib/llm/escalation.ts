@@ -88,10 +88,16 @@ function extractConfidence<T>(
   obj: T | null,
   field?: keyof T
 ): number {
-  if (!obj || !field) return 1; // sin campo de confianza → siempre aceptar
+  // Sin campo de confianza configurado → el caller no pidió gating por
+  // confianza; aceptamos Fast (comportamiento intencionado).
+  if (!field) return 1;
+  // Se pidió gating pero no hay JSON parseado → confianza mínima → escalar.
+  // (En la práctica chatWithEscalation ya escala por fastParsed === null.)
+  if (!obj) return 0;
   const v = obj[field];
   if (typeof v === 'number') return v;
-  // Campo ausente o no numérico → no penalizar (aceptar Fast, evita escalar
-  // a Deep por una omisión del modelo y disparar coste).
-  return 1;
+  // Campo de confianza ESPERADO pero ausente o no numérico → tratarlo como
+  // baja confianza para forzar la escalación a Deep. Antes devolvía 1 y una
+  // omisión del modelo hacía que nunca se escalara (degradación silenciosa).
+  return 0;
 }

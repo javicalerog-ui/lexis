@@ -1,0 +1,10 @@
+EVENT: project_audit_completed
+PROJECT: 10-lexis-segundo-cerebro
+PHASE: development
+TRIGGER: "quiero que revises todo el proyecto de Lexis: bugs, mejoras, stack"
+VULNS_FOUND: 16 (critical: 1, high: 6, medium: 6, low: 3)
+BUGS_FOUND: 3 (middleware gate en rutas públicas, escalation confidence=1, cadence muerta)
+IMPROVEMENTS_FOUND: 12
+DECISION: GO-WITH-CONDITIONS
+TOP_RISK: tokens OAuth Google + API keys en texto plano en connector_credentials
+TIMESTAMP: 2026-07-06

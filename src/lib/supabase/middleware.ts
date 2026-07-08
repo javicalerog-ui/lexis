@@ -31,7 +31,21 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAuthRoute = pathname.startsWith('/auth');
   const isApiAuth = pathname.startsWith('/api/auth');
-  const isPublic = isAuthRoute || isApiAuth || pathname === '/manifest.json';
+  // Endpoints que se llaman SIN cookie de sesión y se autentican por su cuenta
+  // (CRON_SECRET, Personal Access Token, o el secret del webhook). Sin esta
+  // exención el middleware los redirige 302 a /auth/login y quedan inaccesibles
+  // para el cron externo, la API pública v1 y los webhooks entrantes.
+  const isCron = pathname.startsWith('/api/cron');
+  const isPublicApiV1 = pathname.startsWith('/api/v1');
+  const isWebhookInbound =
+    pathname.startsWith('/api/connectors/') && pathname.endsWith('/inbound');
+  const isPublic =
+    isAuthRoute ||
+    isApiAuth ||
+    isCron ||
+    isPublicApiV1 ||
+    isWebhookInbound ||
+    pathname === '/manifest.json';
 
   if (!session && !isPublic) {
     const url = request.nextUrl.clone();
