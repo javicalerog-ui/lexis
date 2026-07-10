@@ -16,6 +16,19 @@
 -- al llamar sin p_user_id. La única llamada en código es
 -- src/lib/classifier/decide.ts (actualizada en el mismo commit).
 -- =====================================================
+--
+-- Fix 2026-07-06 (error real al ejecutar: "42704: type vector does not
+-- exist"): Supabase instala pgvector en el schema `extensions`, no en
+-- `public`. El search_path de esta sesión del SQL Editor no lo incluía
+-- (probable tras el ciclo de pausa/reactivación del proyecto free tier),
+-- así que `vector(1024)` no resolvía al parsear el DDL de abajo. Las dos
+-- líneas siguientes son idempotentes y de alcance solo-sesión: no tocan
+-- el search_path en tiempo de ejecución de la función para los callers
+-- de PostgREST (que ya funcionaba antes de este hardening).
+-- =====================================================
+
+create extension if not exists vector;
+set search_path = public, extensions;
 
 drop function if exists search_memories(vector(1024), int, float, uuid, uuid);
 
