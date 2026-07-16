@@ -1,0 +1,10 @@
+{
+    "permissions":  {
+                        "allow":  [
+                                      "PowerShell(\u0026 \"C:\\Users\\ES00500148\\Desktop\\Proyectos IA\\10-lexis-segundo-cerebro\\scripts\\run.ps1\" -Task lint*)",
+                                      "PowerShell(\u0026 \"C:\\Users\\ES00500148\\Desktop\\Proyectos IA\\10-lexis-segundo-cerebro\\scripts\\run.ps1\" -Task build*)",
+                                      "PowerShell(\u0026 \"C:\\Users\\ES00500148\\Desktop\\Proyectos IA\\10-lexis-segundo-cerebro\\scripts\\run.ps1\" -Task dev*)",
+                                      "PowerShell(\u0026 \"C:\\Users\\ES00500148\\Desktop\\Proyectos IA\\10-lexis-segundo-cerebro\\scripts\\run.ps1\" -Task start*)"
+                                  ]
+                    }
+}

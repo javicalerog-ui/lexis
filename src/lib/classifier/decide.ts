@@ -108,20 +108,26 @@ Decide.`;
     confidence_field: 'confidence',
   });
 
-  // Validar que target_memory_id esté en las candidatas si no es 'new'
+  // Validar que target_memory_id esté en las candidatas si no es 'new'.
+  let decision = parsed.decision;
   let target = parsed.target_memory_id;
-  if (parsed.decision !== 'new') {
+  if (decision !== 'new') {
     const valid = candidates.find((c) => c.id === target);
     if (!valid) {
-      // El LLM alucinó un id. Fallback: usar la mejor candidata.
-      target = candidates[0].id;
+      // El LLM devolvió un id que NO está entre las candidatas (alucinación o
+      // null). NO inventamos una candidata (antes se forzaba candidates[0]):
+      // degradamos a 'new'. Pisar/descartar una memoria buena por una
+      // alucinación es justo lo que "cero invención" prohíbe, y perder
+      // información es peor que duplicar.
+      decision = 'new';
+      target = null;
     }
   } else {
     target = null;
   }
 
   return {
-    decision: parsed.decision,
+    decision,
     target_memory_id: target,
     reasoning: parsed.reasoning,
     confidence: parsed.confidence,

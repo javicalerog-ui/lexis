@@ -94,16 +94,10 @@ ${input.raw_text.slice(0, 12_000)}
     };
   }
 
-  // 3.b. Modificación → marcar la antigua como superseded
-  if (decision.decision === 'modification' && decision.target_memory_id) {
-    await supabase
-      .from('memories')
-      .update({ status: 'superseded' })
-      .eq('id', decision.target_memory_id)
-      .eq('user_id', userId);
-  }
-
   // 4. INSERT memory
+  //    NOTA: la memoria antigua (si es 'modification') se marca superseded
+  //    DESPUÉS de que este insert tenga éxito (paso 6), NO antes. Así, si el
+  //    insert falla, la antigua sigue 'active' y no se pierde ni queda oculta.
   const capturedAt =
     input.captured_at ?? parsed.captured_at_iso ?? new Date().toISOString();
 
@@ -147,9 +141,18 @@ ${input.raw_text.slice(0, 12_000)}
     parsed.entities || []
   );
 
-  // 6. Heredar attachments si era modification
+  // 6. Si era modification: heredar attachments de la antigua y SÓLO ENTONCES
+  //    marcarla superseded. Insert-primero-supersede-después elimina la ventana
+  //    de pérdida de datos: si algo falla antes de aquí, la antigua sigue
+  //    activa; si el propio supersede fallara, quedarían dos memorias activas
+  //    (duplicado recuperable) en vez de una memoria buena oculta para siempre.
   if (decision.decision === 'modification' && decision.target_memory_id) {
     await inheritAttachments(supabase, decision.target_memory_id, memory.id);
+    await supabase
+      .from('memories')
+      .update({ status: 'superseded' })
+      .eq('id', decision.target_memory_id)
+      .eq('user_id', userId);
   }
 
   // 6.b. Extractor de eventos (Sprint 15). No bloqueante: si falla,
