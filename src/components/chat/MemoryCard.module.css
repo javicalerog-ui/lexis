@@ -44,6 +44,10 @@
   letter-spacing: 0;
 }
 
+.cardClickable {
+  cursor: pointer;
+}
+
 .content {
   color: var(--fg-1);
   font-size: 13.5px;
@@ -52,4 +56,21 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.contentFull {
+  color: var(--fg-1);
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.expandHint {
+  display: inline-block;
+  margin-top: var(--s-2);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--accent-bright);
+  user-select: none;
 }
