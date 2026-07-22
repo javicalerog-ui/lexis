@@ -277,6 +277,9 @@ export default function HomePage() {
           <Link href="/export" className={styles.navLink} title="Exportar grafo">
             ⤒
           </Link>
+          <Link href="/settings/password" className={styles.navLink} title="Contraseña">
+            ⚿
+          </Link>
           <Link href="/settings/tokens" className={styles.navLink} title="Tokens API">
             ⚙
           </Link>
