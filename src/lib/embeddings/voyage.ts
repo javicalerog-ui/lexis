@@ -34,6 +34,8 @@ export async function embed(
 
   const cleaned = texts.map((t) => (t || '').slice(0, 32_000));
 
+  // Timeout defensivo: sin él, un Voyage colgado bloquea la función serverless
+  // hasta que Vercel la mata (504 no-JSON). 20s cubre de sobra un embed normal.
   const res = await fetch(VOYAGE_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -46,11 +48,12 @@ export async function embed(
       input_type: inputType,
       output_dimension: DIMENSIONS,
     }),
+    signal: AbortSignal.timeout(20_000),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`Voyage API error (${res.status}): ${errText}`);
+    throw new Error(`Voyage API error (${res.status}): ${errText.slice(0, 300)}`);
   }
 
   const json = (await res.json()) as VoyageResponse;

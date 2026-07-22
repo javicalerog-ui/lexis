@@ -56,12 +56,20 @@ export default function FeedPage() {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  async function load(refresh = false) {
     setBusy(true);
     setError(null);
     try {
-      const data = await fetchJson('/api/feed');
-      setFeed(data);
+      const data = await fetchJson(`/api/feed${refresh ? '?refresh=1' : ''}`);
+      // El endpoint devuelve { feed, from_cache, cached_age_minutes } — el
+      // FeedResult va ANIDADO en .feed. Aceptamos ambas formas por si el
+      // contrato cambia (era la causa del "Application error" en producción:
+      // la página esperaba el objeto plano y feed.items.length cascaba).
+      const payload =
+        data && typeof data === 'object' && 'feed' in data
+          ? (data as { feed: FeedResult }).feed
+          : (data as FeedResult);
+      setFeed(payload);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -71,6 +79,7 @@ export default function FeedPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const groupedItems: Record<Priority, FeedItem[]> = {
@@ -78,7 +87,11 @@ export default function FeedPage() {
     this_week: [],
     soon: [],
   };
-  for (const item of feed?.items ?? []) {
+  // Defensa contra no-array: si el LLM devolviera items como objeto (no array),
+  // `?? []` NO aplica (es truthy) y el for...of lanzaría 'not iterable' → crash
+  // de React (el "Application error" que este fix cierra). Array.isArray lo cubre.
+  const safeItems = Array.isArray(feed?.items) ? feed!.items : [];
+  for (const item of safeItems) {
     if (groupedItems[item.priority]) {
       groupedItems[item.priority].push(item);
     }
@@ -94,7 +107,7 @@ export default function FeedPage() {
           <span className={styles.titleAccent}>feed</span>
         </h1>
         <button
-          onClick={load}
+          onClick={() => load(true)}
           disabled={busy}
           className={styles.refresh}
           title="Regenerar"
@@ -124,9 +137,9 @@ export default function FeedPage() {
             <section className={styles.intro}>
               <p className={styles.summary}>{feed.summary}</p>
               <p className={styles.metaLine}>
-                <span>{feed.projects_considered} proyectos considerados</span>
+                <span>{feed.projects_considered ?? 0} proyectos considerados</span>
                 <span className={styles.metaDot} />
-                <span>{feed.items.length} ítems</span>
+                <span>{safeItems.length} ítems</span>
                 <span className={styles.metaDot} />
                 <span className={styles.metaTime}>
                   generado{' '}
@@ -169,10 +182,10 @@ export default function FeedPage() {
                           <h3 className={styles.itemTitle}>{item.title}</h3>
                         </header>
                         <p className={styles.detail}>{item.detail}</p>
-                        {(item.related_project_slugs.length > 0 ||
-                          item.related_entity_names.length > 0) && (
+                        {((item.related_project_slugs ?? []).length > 0 ||
+                          (item.related_entity_names ?? []).length > 0) && (
                           <div className={styles.tags}>
-                            {item.related_project_slugs.map((s) => (
+                            {(item.related_project_slugs ?? []).map((s) => (
                               <Link
                                 key={s}
                                 href={`/projects/${s}`}
@@ -181,7 +194,7 @@ export default function FeedPage() {
                                 ✦ {s}
                               </Link>
                             ))}
-                            {item.related_entity_names.map((n) => (
+                            {(item.related_entity_names ?? []).map((n) => (
                               <span key={n} className={styles.tagEntity}>
                                 {n}
                               </span>
@@ -195,13 +208,13 @@ export default function FeedPage() {
               );
             })}
 
-            {feed.stale_projects.length > 0 && (
+            {(feed.stale_projects ?? []).length > 0 && (
               <section className={styles.stale}>
                 <h2 className={styles.staleTitle}>
                   Proyectos sin actividad — ¿revisar?
                 </h2>
                 <div className={styles.staleList}>
-                  {feed.stale_projects.map((s) => (
+                  {(feed.stale_projects ?? []).map((s) => (
                     <Link key={s} href={`/projects/${s}`} className={styles.staleChip}>
                       {s}
                     </Link>

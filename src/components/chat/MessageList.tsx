@@ -8,11 +8,68 @@ export type Message =
   | { id: string; kind: 'user_input'; text: string; meta?: string }
   | { id: string; kind: 'system'; text: string; meta?: string }
   | { id: string; kind: 'results'; text: string; results?: MemorySearchResult[] }
+  | { id: string; kind: 'answer'; text: string; meta?: string; pending?: boolean }
   | { id: string; kind: 'error'; text: string };
 
 interface Props {
   messages: Message[];
   mode: 'capture' | 'search';
+}
+
+/**
+ * Render seguro del markdown ligero de la respuesta (síntesis RAG):
+ * párrafos, listas "- ", **negritas** y citas [n] — todo como elementos
+ * React, sin HTML crudo (nunca dangerouslySetInnerHTML).
+ */
+function FormattedAnswer({ text }: { text: string }) {
+  const lines = text.split('\n');
+  const blocks: Array<{ type: 'p' | 'ul'; lines: string[] }> = [];
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (!line.trim()) continue;
+    const isItem = /^[-•]\s+/.test(line.trim());
+    const last = blocks[blocks.length - 1];
+    if (isItem) {
+      if (last?.type === 'ul') last.lines.push(line.trim().replace(/^[-•]\s+/, ''));
+      else blocks.push({ type: 'ul', lines: [line.trim().replace(/^[-•]\s+/, '')] });
+    } else {
+      blocks.push({ type: 'p', lines: [line.trim()] });
+    }
+  }
+
+  function renderInline(s: string, keyPrefix: string) {
+    // Trocear por **negritas** y citas [1] / [1, 2]
+    const parts = s.split(/(\*\*[^*]+\*\*|\[\d+(?:\s*,\s*\d+)*\])/g);
+    return parts.map((part, i) => {
+      if (/^\*\*[^*]+\*\*$/.test(part)) {
+        return <strong key={`${keyPrefix}-${i}`}>{part.slice(2, -2)}</strong>;
+      }
+      if (/^\[\d+(?:\s*,\s*\d+)*\]$/.test(part)) {
+        return (
+          <span key={`${keyPrefix}-${i}`} className={styles.cite}>
+            {part}
+          </span>
+        );
+      }
+      return <span key={`${keyPrefix}-${i}`}>{part}</span>;
+    });
+  }
+
+  return (
+    <div className={styles.answerText}>
+      {blocks.map((b, bi) =>
+        b.type === 'ul' ? (
+          <ul key={bi} className={styles.answerList}>
+            {b.lines.map((l, li) => (
+              <li key={li}>{renderInline(l, `${bi}-${li}`)}</li>
+            ))}
+          </ul>
+        ) : (
+          <p key={bi}>{renderInline(b.lines[0], `${bi}`)}</p>
+        )
+      )}
+    </div>
+  );
 }
 
 export function MessageList({ messages, mode }: Props) {
@@ -67,6 +124,24 @@ export function MessageList({ messages, mode }: Props) {
                     <MemoryCard key={r.id} result={r} />
                   ))}
                 </div>
+              )}
+            </div>
+          )}
+
+          {m.kind === 'answer' && (
+            <div className={styles.answer}>
+              <div className={styles.systemHeader}>
+                <span className={styles.answerDot} />
+                <span className={styles.systemLabel}>
+                  {m.pending ? 'sintetizando respuesta…' : m.meta || 'respuesta'}
+                </span>
+              </div>
+              {m.pending ? (
+                <div className={styles.answerPending}>
+                  Leyendo tus memorias y redactando…
+                </div>
+              ) : (
+                <FormattedAnswer text={m.text} />
               )}
             </div>
           )}

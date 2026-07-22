@@ -23,7 +23,13 @@ export default function HomePage() {
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    listRef.current?.scrollTo({ top: 999_999, behavior: 'smooth' });
+    const el = listRef.current;
+    if (!el) return;
+    // Solo autoscroll si el usuario YA está cerca del fondo. Sin esto, la
+    // respuesta RAG (que llega segundos después vía setMessages map) le
+    // arrancaría el viewport de donde está leyendo una memoria.
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
   function pushMessage(m: Message) {
@@ -133,10 +139,11 @@ export default function HomePage() {
     }
   }, []);
 
-  /** ============ BÚSQUEDA ============ */
+  /** ============ BÚSQUEDA + SÍNTESIS ============ */
   const handleSearch = useCallback(async (query: string) => {
     pushMessage({ id: nanoid(), kind: 'user_input', text: query });
     setBusy(true);
+    let results: MemorySearchResult[] = [];
     try {
       const data = await fetchJson<{ results: MemorySearchResult[] }>(
         '/api/search',
@@ -146,7 +153,7 @@ export default function HomePage() {
           body: JSON.stringify({ query, match_count: 8 }),
         }
       );
-      const results = data.results as MemorySearchResult[];
+      results = data.results as MemorySearchResult[];
       pushMessage({
         id: nanoid(),
         kind: 'results',
@@ -155,8 +162,49 @@ export default function HomePage() {
       });
     } catch (e) {
       pushMessage({ id: nanoid(), kind: 'error', text: String(e) });
+      setBusy(false);
+      return;
     } finally {
       setBusy(false);
+    }
+
+    // Síntesis RAG en segundo plano: redacta una respuesta con las memorias
+    // recuperadas (o deja claro que no hay nada y opina, etiquetado). No
+    // bloquea el input: el placeholder se sustituye al llegar.
+    const answerId = nanoid();
+    pushMessage({ id: answerId, kind: 'answer', text: '', pending: true });
+    try {
+      const ans = await fetchJson<{
+        answer_md: string;
+        memories_used: number;
+        grounded: boolean;
+      }>('/api/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, memory_ids: results.map((r) => r.id) }),
+      });
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === answerId
+            ? {
+                id: answerId,
+                kind: 'answer' as const,
+                text: ans.answer_md,
+                meta: ans.grounded
+                  ? `respuesta · ${ans.memories_used} memorias`
+                  : 'respuesta · sin base en tu memoria',
+              }
+            : m
+        )
+      );
+    } catch (e) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === answerId
+            ? { id: answerId, kind: 'error' as const, text: `síntesis: ${String(e)}` }
+            : m
+        )
+      );
     }
   }, []);
 
