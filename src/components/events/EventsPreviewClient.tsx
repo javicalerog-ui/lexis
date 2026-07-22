@@ -261,7 +261,7 @@ export function EventsPreviewClient() {
           <span>
             <strong>Crear también en Google Calendar</strong>
             <span className={styles.toggleDesc}>
-              Va al calendario "Lexis · Borradores" salvo que tengas activo "write to primary".
+              Va al calendario «Lexis · Borradores» salvo que tengas activo «write to primary».
             </span>
           </span>
         </label>

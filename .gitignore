@@ -24,9 +24,16 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
-.env*.local
-.env
+# env files and common secret-bearing backups
+.env*
+!.env.example
+*.env
+*.env.*
+*.bak
+*.backup
+*.key
+*credentials*.json
+*service-account*.json
 
 # vercel
 .vercel

@@ -264,7 +264,7 @@ export function InboxClient({
               <div className={styles.responseShow}>
                 Respondido con <strong>{a.response.action}</strong>
                 {a.response.voice_transcript && (
-                  <div className={styles.voiceTranscript}>"{a.response.voice_transcript}"</div>
+                  <div className={styles.voiceTranscript}>«{a.response.voice_transcript}»</div>
                 )}
               </div>
             )}

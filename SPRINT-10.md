@@ -163,7 +163,7 @@ Añadido ⇲ (Connectors) entre ✉ Digest y ⤒ Export. El header ya tiene 11 e
 
 9. **Cron evaluación granular**: el dispatcher se llama (idealmente) cada 5-10 minutos desde Cloudflare Cron Triggers. Cada llamada lista todos los connectors enabled con schedule y evalúa uno a uno si toca. No hay scheduler distribuido; PostgreSQL es la fuente de verdad.
 
-10. **Texto plano en access_token/refresh_token**: para Sprint 10 las credentials se guardan en plano. Tabla con RLS estricta + Supabase eu-west-1 + no expuesto públicamente. Anotación: para producción industrial considerar pgcrypto encryption-at-rest.
+10. **Decisión histórica, sustituida el 2026-07-22**: Sprint 10 nació guardando `access_token`/`refresh_token` en plano. El runtime actual usa sobres autenticados AES-256-GCM `enc:v1`, ligados al campo y a la fila, y rechaza texto plano. Las instalaciones heredadas deben seguir `docs/SECURITY-P0-CREDENTIALS-2026-07-22.md`.
 
 ---
 
@@ -267,7 +267,7 @@ Plan acordado:
 - **OAuth2 Google**:
   - Endpoints `/api/oauth/google/start` y `/api/oauth/google/callback`.
   - Scopes: `gmail.readonly` para Sprint 11; `drive.readonly` se añade en Sprint 12.
-  - Persistir en `connector_credentials` con `provider='google'`, `access_token`, `refresh_token`, `expires_at`, `account_identifier=<email>`.
+  - Persistir en `connector_credentials` con `provider='google'`, `access_token` y `refresh_token` cifrados, `expires_at`, `account_identifier=<email>`.
   - Helper `refreshIfNeeded(credentials)` que renueve el access_token cuando expira y persista.
 - **Adapter Gmail** (`src/lib/connectors/adapters/gmail.ts`):
   - Config: `label_filter` (e.g. "lexis-inbox"), `query` (gmail search syntax), `include_attachments` (bool).

@@ -1,6 +1,6 @@
 // =====================================================
 // POST /api/cron/digest
-// Cron protegido por X-CRON-SECRET. Selecciona usuarios
+// Cron protegido por Authorization: Bearer <CRON_SECRET>. Selecciona usuarios
 // cuya cadencia + hora coincide con "ahora" y genera+envía.
 //
 // Estrategia simple:
@@ -15,6 +15,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { generateDigest } from '@/lib/digest/generate';
 import { renderDigestEmail } from '@/lib/digest/render-email';
 import { sendEmail } from '@/lib/digest/email';
+import { isCronRequestAuthorized } from '@/lib/security/cron-auth.mjs';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -64,9 +65,8 @@ function shouldSend(
 }
 
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret');
-  if (!secret || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!isCronRequestAuthorized(req.headers)) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
   const supabase = createServiceClient();

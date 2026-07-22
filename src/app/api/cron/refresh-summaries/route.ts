@@ -1,6 +1,6 @@
 // =====================================================
 // POST /api/cron/refresh-summaries
-// Endpoint protegido por header X-CRON-SECRET.
+// Endpoint protegido por Authorization: Bearer <CRON_SECRET>.
 // Refresca rolling_summary de:
 //   - Proyectos activos con actividad reciente o summary stale
 //   - Entidades marcadas summary_stale (Sprint 6)
@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { refreshProjectSummary } from '@/lib/projects/refresh-summary';
 import { refreshEntitySummary } from '@/lib/entities/refresh-summary';
+import { isCronRequestAuthorized } from '@/lib/security/cron-auth.mjs';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -26,9 +27,8 @@ const MAX_ENTITIES_PER_RUN = 20;
 const ENTITY_MIN_INTERACTIONS = 2;
 
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret');
-  if (!secret || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!isCronRequestAuthorized(req.headers)) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
   const supabase = createServiceClient();

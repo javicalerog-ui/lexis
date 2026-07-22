@@ -60,6 +60,7 @@ Copia `.env.example` a `.env.local` y rellena. Resumen:
 | `RESEND_DIGEST_FROM` | Remitente digest | Tu dominio |
 | `NEXT_PUBLIC_APP_URL` | Base URL pública | `http://localhost:3000` o tu dominio |
 | `CRON_SECRET` | Protege `/api/cron/*` | Generar 32 bytes random |
+| `CONNECTOR_CREDENTIALS_ENCRYPTION_KEY` | Cifra OAuth/API keys de connectors en reposo | Generar 32 bytes; guardar en secret manager |
 
 ### Habilitan features adicionales
 
@@ -70,6 +71,7 @@ Copia `.env.example` a `.env.local` y rellena. Resumen:
 | `AUDIO_PROVIDER` | `openai` o `groq` |
 | `GOOGLE_OAUTH_CLIENT_ID` / `_SECRET` | Connectors Gmail + Drive |
 | `OAUTH_STATE_SECRET` | Firma del CSRF state (32 bytes random) |
+| `CONNECTOR_CREDENTIALS_PREVIOUS_KEY` | Ventana temporal para rotar la clave de cifrado; retirar tras migrar |
 
 Setup completo en [`.env.example`](./.env.example) con URLs y comentarios sobre cada una.
 
@@ -117,6 +119,22 @@ En dev puedes triggear manualmente:
 curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
   http://localhost:3000/api/cron/connectors
 ```
+
+Todos los endpoints cron usan exclusivamente `Authorization: Bearer ${CRON_SECRET}`.
+`X-CRON-SECRET` no forma parte del contrato y se rechaza. Un `CRON_SECRET` ausente
+o de menos de 32 bytes deja los endpoints cerrados.
+
+## Seguridad de credenciales de connectors
+
+Los access tokens, refresh tokens y API keys se guardan como sobres autenticados
+AES-256-GCM (`enc:v1`); el runtime rechaza tanto texto plano heredado como una clave
+ausente, incorrecta o un ciphertext manipulado. Los PAT de la API continúan
+guardándose exclusivamente como hash.
+
+Una instalación que ya tenga filas en `connector_credentials` debe ejecutar el
+procedimiento de mantenimiento y rotación de
+[`docs/SECURITY-P0-CREDENTIALS-2026-07-22.md`](./docs/SECURITY-P0-CREDENTIALS-2026-07-22.md)
+antes de reactivar connectors. El código local no ejecuta esa migración remota por sí solo.
 
 ---
 

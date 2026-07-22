@@ -12,6 +12,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AdapterCredentials } from '@/lib/connectors/types';
+import { encryptCredentialValues } from '@/lib/connectors/credentials';
 import { refreshAccessToken } from './google';
 
 const EXPIRY_MARGIN_MS = 5 * 60 * 1000;       // refrescar si quedan <5min
@@ -48,16 +49,22 @@ export async function refreshIfNeeded(
   const newRefresh = fresh.refresh_token || credentials.refresh_token;
   const newScopes = fresh.scope ? fresh.scope.split(' ') : credentials.scopes;
 
-  await supabase
+  const { error: persistError } = await supabase
     .from('connector_credentials')
     .update({
-      access_token: fresh.access_token,
-      refresh_token: newRefresh,
+      ...encryptCredentialValues({
+        access_token: fresh.access_token,
+        refresh_token: newRefresh,
+      }, credentials.id),
       expires_at: newExpiresAt,
       scopes: newScopes,
       updated_at: new Date().toISOString(),
     })
     .eq('id', credentials.id);
+
+  if (persistError) {
+    throw new Error('credential_refresh_persist_failed');
+  }
 
   return {
     ...credentials,

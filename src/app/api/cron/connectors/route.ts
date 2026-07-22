@@ -12,14 +12,13 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { shouldRunNow } from '@/lib/connectors/scheduler';
 import { runConnector } from '@/lib/connectors/runner';
+import { isCronRequestAuthorized } from '@/lib/security/cron-auth.mjs';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
-  const auth = req.headers.get('authorization') || '';
-  const expected = `Bearer ${process.env.CRON_SECRET || ''}`;
-  if (!process.env.CRON_SECRET || auth !== expected) {
+  if (!isCronRequestAuthorized(req.headers)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
@@ -84,9 +83,7 @@ export async function POST(req: Request) {
 
 // GET por conveniencia: estado actual sin ejecutar nada
 export async function GET(req: Request) {
-  const auth = req.headers.get('authorization') || '';
-  const expected = `Bearer ${process.env.CRON_SECRET || ''}`;
-  if (!process.env.CRON_SECRET || auth !== expected) {
+  if (!isCronRequestAuthorized(req.headers)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 

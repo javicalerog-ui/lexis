@@ -98,7 +98,7 @@ Si tienes entidades pre-existentes con muchas memorias y sin summary, llamar al 
 
 ```bash
 curl -X POST https://<tu-dominio>/api/cron/refresh-summaries \
-  -H "x-cron-secret: <CRON_SECRET>"
+  -H "Authorization: Bearer <CRON_SECRET>"
 ```
 
 Respuesta debería listar entidades refreshed con su confidence.

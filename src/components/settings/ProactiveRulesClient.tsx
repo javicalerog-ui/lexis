@@ -241,7 +241,7 @@ export function ProactiveRulesClient({
                 disabled={busy}
               >
                 Quedarme con la mía
-                <span className={styles.btnSub}>(deshabilita "{conflict.conflicting_rule.name}")</span>
+                <span className={styles.btnSub}>(deshabilita «{conflict.conflicting_rule.name}»)</span>
               </button>
               <button
                 onClick={() => { setConflict(null); setCreating(false); resetDraft(); }}

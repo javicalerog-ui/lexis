@@ -11,9 +11,9 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getAdapter } from './registry';
+import { loadDecryptedCredentialsById } from './credentials';
 import { ingest } from '@/lib/ingestion/pipeline';
 import type {
-  AdapterCredentials,
   AdapterContext,
   AdapterRunResult,
   ConnectorItem,
@@ -32,20 +32,6 @@ export interface RunSummary {
   items_skipped: number;
   items_failed: number;
   error_message?: string;
-}
-
-async function loadCredentials(
-  supabase: SupabaseClient,
-  credentials_id: string | null
-): Promise<AdapterCredentials | null> {
-  if (!credentials_id) return null;
-  const { data } = await supabase
-    .from('connector_credentials')
-    .select('id, provider, access_token, refresh_token, expires_at, api_key, scopes')
-    .eq('id', credentials_id)
-    .maybeSingle();
-  if (!data) return null;
-  return data as AdapterCredentials;
 }
 
 export async function runConnector(
@@ -96,7 +82,9 @@ export async function runConnector(
 
   try {
     // 3. Cargar credenciales si las hay (refrescando si expiran)
-    let credentials = await loadCredentials(supabase, connector.credentials_id);
+    let credentials = connector.credentials_id
+      ? await loadDecryptedCredentialsById(supabase, connector.credentials_id, userId)
+      : null;
     if (credentials) {
       const { refreshIfNeeded } = await import('@/lib/oauth/refresh');
       credentials = await refreshIfNeeded(supabase, credentials);

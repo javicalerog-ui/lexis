@@ -52,7 +52,7 @@
 | `PATCH /api/projects/[slug]` | Edita name/description/status |
 | `GET /api/entities?type=person` | Lista entidades, opcionalmente filtradas por tipo |
 | `GET /api/entities/[id]` | Detalle: entidad + memorias + proyectos donde aparece |
-| `POST /api/cron/refresh-summaries` | Cron protegido (header `X-CRON-SECRET`) para regenerar rolling summaries de proyectos stale |
+| `POST /api/cron/refresh-summaries` | Cron protegido (`Authorization: Bearer <CRON_SECRET>`) para regenerar rolling summaries de proyectos stale |
 
 ### UI
 
@@ -108,7 +108,7 @@ Response: { memory_id, decision, attached_projects, attached_entities }
 
 ## Cron de rolling summary
 
-`POST /api/cron/refresh-summaries` con header `X-CRON-SECRET: $CRON_SECRET`.
+`POST /api/cron/refresh-summaries` con header `Authorization: Bearer $CRON_SECRET`.
 
 **Tres formas de invocarlo**:
 
@@ -126,7 +126,7 @@ export default {
   async scheduled(event, env) {
     await fetch('https://lexis.pages.dev/api/cron/refresh-summaries', {
       method: 'POST',
-      headers: { 'x-cron-secret': env.CRON_SECRET },
+      headers: { Authorization: `Bearer ${env.CRON_SECRET}` },
     });
   },
 };
@@ -145,7 +145,7 @@ jobs:
     steps:
       - run: |
           curl -X POST https://lexis.pages.dev/api/cron/refresh-summaries \
-            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 ```
 
 ### C) Manual

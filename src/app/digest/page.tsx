@@ -108,8 +108,8 @@ export default async function DigestListPage() {
           </section>
         ) : (
           <p className={styles.empty}>
-            Aún no se ha generado ningún digest. Pulsa "Generar preview" para ver una vista
-            previa o "Enviar ahora" para mandarte el primero por email.
+            Aún no se ha generado ningún digest. Pulsa «Generar preview» para ver una vista
+            previa o «Enviar ahora» para mandarte el primero por email.
           </p>
         )}
       </div>

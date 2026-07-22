@@ -24,8 +24,9 @@ exception when duplicate_object then null; end $$;
 -- compartida por varios connectors del mismo provider (e.g.
 -- una cuenta Google sirviendo a Gmail + Drive).
 --
--- NOTA: access_token/refresh_token en texto plano. Para producción
--- considerar pgcrypto. Habilitado RLS, solo el dueño accede.
+-- Las columnas text son el contenedor histórico. El runtime actual escribe
+-- sobres AES-256-GCM enc:v1 y rechaza texto plano. Instalaciones anteriores
+-- deben ejecutar scripts/migrate-connector-credentials.mjs antes de operar.
 -- =====================================================
 
 create table if not exists connector_credentials (

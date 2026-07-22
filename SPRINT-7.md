@@ -139,7 +139,7 @@ Una vez que la app esté en producción (Cloudflare Pages con dominio), configur
 
 ```bash
 curl -X POST https://<tu-dominio>/api/cron/digest \
-  -H "x-cron-secret: <CRON_SECRET>"
+  -H "Authorization: Bearer <CRON_SECRET>"
 ```
 
 Verificar:

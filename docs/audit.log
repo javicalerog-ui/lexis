@@ -8,3 +8,14 @@ IMPROVEMENTS_FOUND: 12
 DECISION: GO-WITH-CONDITIONS
 TOP_RISK: tokens OAuth Google + API keys en texto plano en connector_credentials
 TIMESTAMP: 2026-07-06
+
+EVENT: p0_security_containment_implemented
+PROJECT: 10-lexis-segundo-cerebro
+PHASE: development
+TRIGGER: "contención P0 0-48h prioritaria"
+VULNS_REMEDIATED_IN_CODE: connector credential plaintext persistence; divergent cron authentication; OAuth error detail leakage; weak local secret ignore patterns
+REGRESSIONS_ADDED: authenticated encryption, fail-closed legacy handling, tamper detection, key rotation, canonical Bearer cron authentication
+EXTERNAL_ACTIONS_PENDING: remote credential migration; Google grant reauthorization; connector API-key rotation; CRON_SECRET rotation; deploy and smoke tests
+DECISION: NO-GO-CONNECTORS-UNTIL-REMOTE-MIGRATION-AND-ROTATION
+SECRET_VALUES_READ_OR_EXPOSED: no
+TIMESTAMP: 2026-07-22

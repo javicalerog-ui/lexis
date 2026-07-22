@@ -16,6 +16,7 @@
 // =====================================================
 
 import { NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { exchangeCodeForTokens, fetchUserInfo } from '@/lib/oauth/google';
 import {
@@ -23,13 +24,20 @@ import {
   readStateCookie,
   buildClearCookieHeader,
 } from '@/lib/oauth/state';
+import {
+  assertCredentialEncryptionReady,
+} from '@/lib/security/credential-encryption.mjs';
+import {
+  encryptCredentialValues,
+  loadDecryptedRefreshTokenById,
+  resolveCredentialRefreshToken,
+} from '@/lib/connectors/credentials';
 
 export const runtime = 'nodejs';
 
-function errorRedirect(req: Request, code: string, detail?: string): NextResponse {
+function errorRedirect(req: Request, code: string): NextResponse {
   const url = new URL('/oauth/google/error', req.url);
   url.searchParams.set('code', code);
-  if (detail) url.searchParams.set('detail', detail.slice(0, 200));
   const res = NextResponse.redirect(url);
   res.headers.append('Set-Cookie', buildClearCookieHeader());
   return res;
@@ -42,7 +50,7 @@ export async function GET(req: Request) {
   const userErr = url.searchParams.get('error');
 
   if (userErr) {
-    return errorRedirect(req, 'google_denied', userErr);
+    return errorRedirect(req, 'google_denied');
   }
   if (!code || !stateParam) {
     return errorRedirect(req, 'missing_params');
@@ -71,20 +79,27 @@ export async function GET(req: Request) {
     return errorRedirect(req, 'user_mismatch');
   }
 
+  // Do not consume the one-time OAuth code unless secure persistence is ready.
+  try {
+    assertCredentialEncryptionReady();
+  } catch {
+    return errorRedirect(req, 'credential_encryption_unavailable');
+  }
+
   // 4. Intercambiar code
   let tokens;
   try {
     tokens = await exchangeCodeForTokens(code);
-  } catch (e) {
-    return errorRedirect(req, 'token_exchange_failed', String(e));
+  } catch {
+    return errorRedirect(req, 'token_exchange_failed');
   }
 
   // 5. Fetch userinfo
   let userinfo;
   try {
     userinfo = await fetchUserInfo(tokens.access_token);
-  } catch (e) {
-    return errorRedirect(req, 'userinfo_failed', String(e));
+  } catch {
+    return errorRedirect(req, 'userinfo_failed');
   }
 
   const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
@@ -97,7 +112,7 @@ export async function GET(req: Request) {
     // UPDATE: añadir scopes a una credential existente
     const { data: existing } = await supabase
       .from('connector_credentials')
-      .select('id, scopes, refresh_token')
+      .select('id, scopes')
       .eq('id', payload.intent.reuse_credentials_id)
       .eq('user_id', user.id)
       .maybeSingle();
@@ -108,24 +123,37 @@ export async function GET(req: Request) {
 
     // Merge scopes (no perder los existentes)
     const mergedScopes = Array.from(new Set([...(existing.scopes || []), ...scopes]));
+    let refreshToken: string | null;
+    try {
+      refreshToken = await resolveCredentialRefreshToken(
+        tokens.refresh_token,
+        () => loadDecryptedRefreshTokenById(supabase, existing.id, user.id)
+      );
+    } catch {
+      return errorRedirect(req, 'legacy_credentials_require_migration');
+    }
 
-    await supabase
+    const { error: updateError } = await supabase
       .from('connector_credentials')
       .update({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token || existing.refresh_token,
+        ...encryptCredentialValues({
+          access_token: tokens.access_token,
+          refresh_token: refreshToken,
+        }, existing.id),
         expires_at: expiresAt,
         scopes: mergedScopes,
         updated_at: new Date().toISOString(),
       })
       .eq('id', existing.id);
 
+    if (updateError) return errorRedirect(req, 'persist_failed');
+
     credentialsId = existing.id;
   } else {
     // INSERT o UPDATE-if-exists por (user, provider, email)
     const { data: existing } = await supabase
       .from('connector_credentials')
-      .select('id, scopes, refresh_token')
+      .select('id, scopes')
       .eq('user_id', user.id)
       .eq('provider', 'google')
       .eq('account_identifier', userinfo.email)
@@ -135,27 +163,43 @@ export async function GET(req: Request) {
       const mergedScopes = Array.from(
         new Set([...(existing.scopes || []), ...scopes])
       );
-      await supabase
+      let refreshToken: string | null;
+      try {
+        refreshToken = await resolveCredentialRefreshToken(
+          tokens.refresh_token,
+          () => loadDecryptedRefreshTokenById(supabase, existing.id, user.id)
+        );
+      } catch {
+        return errorRedirect(req, 'legacy_credentials_require_migration');
+      }
+      const { error: updateError } = await supabase
         .from('connector_credentials')
         .update({
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token || existing.refresh_token,
+          ...encryptCredentialValues({
+            access_token: tokens.access_token,
+            refresh_token: refreshToken,
+          }, existing.id),
           expires_at: expiresAt,
           scopes: mergedScopes,
           updated_at: new Date().toISOString(),
         })
         .eq('id', existing.id);
+      if (updateError) return errorRedirect(req, 'persist_failed');
       credentialsId = existing.id;
     } else {
+      const newCredentialsId = randomUUID();
       const { data: inserted, error: insErr } = await supabase
         .from('connector_credentials')
         .insert({
+          id: newCredentialsId,
           user_id: user.id,
           provider: 'google',
           label: `Google · ${userinfo.email}`,
           account_identifier: userinfo.email,
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token || null,
+          ...encryptCredentialValues({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token || null,
+          }, newCredentialsId),
           expires_at: expiresAt,
           scopes,
         })
@@ -163,7 +207,7 @@ export async function GET(req: Request) {
         .single();
 
       if (insErr || !inserted) {
-        return errorRedirect(req, 'persist_failed', insErr?.message);
+        return errorRedirect(req, 'persist_failed');
       }
       credentialsId = inserted.id;
     }

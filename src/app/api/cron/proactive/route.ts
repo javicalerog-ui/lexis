@@ -17,6 +17,7 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { cronMatchesNow, nextCronFireUtc } from '@/lib/time/userTime';
 import { executeAction } from '@/lib/proactive/executors';
+import { isCronRequestAuthorized } from '@/lib/security/cron-auth.mjs';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -24,8 +25,7 @@ export const maxDuration = 60;
 const TICK_TOLERANCE_MS = 5 * 60_000;     // si fire estaba en últimos 5min, considéralo "ahora"
 
 export async function GET(req: Request) {
-  const auth = req.headers.get('authorization');
-  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronRequestAuthorized(req.headers)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 

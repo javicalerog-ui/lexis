@@ -10,9 +10,15 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { refreshIfNeeded } from '@/lib/oauth/refresh';
+import {
+  listCredentialMetadataForUser,
+  loadDecryptedCredentialsById,
+} from '@/lib/connectors/credentials';
+import type { AdapterCredentials } from '@/lib/connectors/types';
 
 const CAL_API = 'https://www.googleapis.com/calendar/v3';
 const DRAFT_CAL_SUMMARY = 'Lexis · Borradores';
+type FreshGoogleCredentials = AdapterCredentials & { access_token: string };
 
 // ---------- Tipos ----------
 
@@ -49,36 +55,18 @@ export interface GCalEvent extends GCalEventPayload {
   organizer?: { email: string; displayName?: string };
 }
 
-interface CredentialRow {
-  id: string;
-  user_id: string;
-  provider: string;
-  access_token: string;
-  refresh_token: string | null;
-  expires_at: string | null;
-  scopes: string[];
-  account_identifier: string | null;
-}
-
 // ---------- Resolución de credentials ----------
 
 async function getFreshCredentials(
   supabase: SupabaseClient,
   userId: string
-): Promise<CredentialRow> {
-  // Busca cualquier credential Google del user con scope 'calendar'
-  const { data, error } = await supabase
-    .from('connector_credentials')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('provider', 'google')
-    .order('updated_at', { ascending: false });
-
-  if (error) throw new Error(`getFreshCredentials: ${error.message}`);
-  if (!data || data.length === 0) {
+): Promise<FreshGoogleCredentials> {
+  // Primero elige por metadatos; no materializa secretos de filas descartadas.
+  const metadata = await listCredentialMetadataForUser(supabase, userId, 'google');
+  if (metadata.length === 0) {
     throw new Error('no_google_credentials');
   }
-  const withCalendar = data.find((c) =>
+  const withCalendar = metadata.find((c) =>
     (c.scopes ?? []).some((s: string) =>
       s.includes('calendar') && !s.includes('readonly')
     )
@@ -86,12 +74,15 @@ async function getFreshCredentials(
   if (!withCalendar) {
     throw new Error('no_calendar_scope');
   }
-  // refreshIfNeeded usa AdapterCredentials (shape compatible: access_token,
-  // refresh_token, expires_at); cast vía unknown para puentear los dos tipos.
-  return (await refreshIfNeeded(
+  const decrypted = await loadDecryptedCredentialsById(
     supabase,
-    withCalendar as unknown as Parameters<typeof refreshIfNeeded>[1]
-  )) as unknown as CredentialRow;
+    withCalendar.id,
+    userId
+  );
+  if (!decrypted) throw new Error('no_google_credentials');
+  const refreshed = await refreshIfNeeded(supabase, decrypted);
+  if (!refreshed.access_token) throw new Error('missing_google_access_token');
+  return { ...refreshed, access_token: refreshed.access_token };
 }
 
 // ---------- Fetch helpers ----------

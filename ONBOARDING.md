@@ -76,7 +76,12 @@ Abre `.env.local` y rellena. El orden recomendado para sacar las keys:
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
-7. **NEXT_PUBLIC_APP_URL**: `http://localhost:3000` (dev) o tu dominio (producción).
+7. **CONNECTOR_CREDENTIALS_ENCRYPTION_KEY** (obligatoria si activas connectors):
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+   Guárdala en el gestor de secretos. No reutilices `CRON_SECRET` ni `OAUTH_STATE_SECRET`.
+8. **NEXT_PUBLIC_APP_URL**: `http://localhost:3000` (dev) o tu dominio (producción).
 
 Google OAuth y `OAUTH_STATE_SECRET` puedes dejarlos vacíos por ahora. Configúralos solo cuando vayas a activar Gmail/Drive connectors (sección 3.3).
 
@@ -107,7 +112,7 @@ Para usar la PWA en el móvil **necesitas HTTPS**. localhost en el móvil es com
 3. Build: Next.js · `npm run build` · output `.next` · Node 20.
 4. Environment variables: copia las de `.env.local` PERO con `NEXT_PUBLIC_APP_URL` ahora apuntando a tu URL de producción (ej. `https://lexis-tu-handle.pages.dev`).
 5. Deploy. Espera ~3 min.
-6. Cron Triggers en Settings → 3 cron jobs (`/api/cron/connectors` cada 10min, `/api/cron/digest` cada hora, `/api/cron/refresh-summaries` cada hora), todos con header `Authorization: Bearer ${CRON_SECRET}`.
+6. Cron Triggers en Settings → 4 cron jobs: `POST /api/cron/connectors` cada 10min, `POST /api/cron/digest` cada hora, `POST /api/cron/refresh-summaries` cada hora y `GET /api/cron/proactive` cada 5min. Todos usan exclusivamente `Authorization: Bearer ${CRON_SECRET}`.
 
 ### 1.8 — Instalar PWA en el móvil
 
