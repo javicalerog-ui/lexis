@@ -40,7 +40,7 @@
 .track {
   position: relative;
   height: 6px;
-  background: rgba(11, 15, 31, 0.6);
+  background: var(--bg-3);
   border-radius: var(--r-full);
   overflow: hidden;
 }

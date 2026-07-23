@@ -94,7 +94,7 @@
 .input {
   width: 100%;
   padding: var(--s-4) var(--s-5);
-  background: rgba(11, 15, 31, 0.7);
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   color: var(--fg-0);

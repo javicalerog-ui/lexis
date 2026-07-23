@@ -13,7 +13,7 @@
 
 .card:hover {
   border-color: rgba(79, 142, 255, 0.35);
-  background: rgba(28, 36, 71, 0.7);
+  background: var(--card-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md), 0 0 24px rgba(79, 142, 255, 0.15);
 }
@@ -55,7 +55,7 @@
 .status.done,
 .status.archived {
   color: var(--fg-3);
-  background: rgba(120, 145, 220, 0.08);
+  background: var(--bg-3);
 }
 
 .summary {

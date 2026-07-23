@@ -236,7 +236,7 @@
   color: var(--fg-3);
   border-radius: var(--r-full);
   border: 1px solid var(--line);
-  background: rgba(11, 15, 31, 0.4);
+  background: var(--card-bg);
   transition: all var(--dur-fast) var(--ease-out);
 }
 .closeBtn:hover:not(:disabled) {

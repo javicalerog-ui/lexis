@@ -13,7 +13,7 @@
   grid-template-columns: 80px 1fr 80px;
   align-items: center;
   padding: var(--s-4) var(--s-5);
-  background: rgba(6, 8, 18, 0.7);
+  background: var(--overlay-bg);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   border-bottom: 1px solid var(--line);
@@ -229,7 +229,7 @@
 
 .item {
   padding: var(--s-4) var(--s-5);
-  background: rgba(11, 15, 31, 0.55);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   transition: all var(--dur-fast) var(--ease-out);
@@ -237,7 +237,7 @@
 }
 .item:hover {
   border-color: var(--line-strong);
-  background: rgba(19, 26, 50, 0.7);
+  background: var(--card-hover);
   transform: translateX(2px);
 }
 

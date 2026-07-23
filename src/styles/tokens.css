@@ -1,58 +1,61 @@
 /* =====================================================
    Lexis — Design tokens
-   Dirección estética: "premium dark observatory"
+   Dirección estética: "clean light studio" (claro por defecto).
+   El tema oscuro original se conserva bajo :root[data-theme="dark"]
+   por si se añade un interruptor; la app arranca en claro.
    ===================================================== */
 
 :root {
-  /* ---------- Colores base ---------- */
-  --bg-0: #060812;             /* fondo profundo */
-  --bg-1: #0b0f1f;             /* fondo principal */
-  --bg-2: #131a32;             /* elevación 1 */
-  --bg-3: #1c2447;             /* elevación 2 */
+  /* ---------- Colores base (CLARO) ---------- */
+  --bg-0: #e9edf5;             /* fondo de la app (gris frío suave) */
+  --bg-1: #f2f5fb;             /* superficie principal */
+  --bg-2: #ffffff;             /* elevación / tarjetas */
+  --bg-3: #eef1f8;             /* relleno sutil (chips, inputs) */
 
-  --surface-glass: rgba(28, 36, 71, 0.55);
-  --surface-glass-border: rgba(120, 145, 220, 0.18);
+  --surface-glass: rgba(255, 255, 255, 0.72);
+  --surface-glass-border: rgba(28, 36, 71, 0.10);
 
-  --line: rgba(120, 145, 220, 0.12);
-  --line-strong: rgba(120, 145, 220, 0.28);
+  --line: rgba(28, 36, 71, 0.10);
+  --line-strong: rgba(28, 36, 71, 0.18);
 
   /* ---------- Texto ---------- */
-  --fg-0: #f1f4ff;
-  --fg-1: #d4daeb;
-  --fg-2: #8a93b8;
-  --fg-3: #5b6489;
+  --fg-0: #171b28;
+  --fg-1: #2b3042;
+  --fg-2: #565d73;
+  --fg-3: #8a90a6;
 
   /* ---------- Acentos ---------- */
-  --accent: #4f8eff;           /* electric blue */
-  --accent-bright: #6fa3ff;
-  --accent-deep: #1f4ed8;
-  --violet: #b347ff;           /* neon violet */
-  --violet-bright: #c875ff;
+  --accent: #2f7fd0;           /* azul, ajustado para fondo claro */
+  --accent-bright: #3a8fe6;
+  --accent-deep: #1f66b8;
+  --violet: #6d5ae6;           /* violeta de marca */
+  --violet-bright: #7c5cff;
 
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
+  --success: #15a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
 
   /* ---------- Gradients ---------- */
-  --grad-accent: linear-gradient(135deg, #4f8eff 0%, #b347ff 100%);
-  --grad-accent-soft: linear-gradient(135deg, rgba(79,142,255,0.18) 0%, rgba(179,71,255,0.18) 100%);
-  --grad-bg: radial-gradient(
-    ellipse at top left,
-    rgba(79, 142, 255, 0.08) 0%,
-    transparent 50%
-  ),
-  radial-gradient(
-    ellipse at bottom right,
-    rgba(179, 71, 255, 0.08) 0%,
-    transparent 50%
-  );
+  --grad-accent: linear-gradient(135deg, #7c5cff 0%, #4ea3e0 100%);
+  --grad-accent-soft: linear-gradient(135deg, rgba(124,92,255,0.12) 0%, rgba(78,163,224,0.10) 100%);
+  --grad-bg:
+    radial-gradient(ellipse at top left, rgba(124,92,255,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at bottom right, rgba(47,127,208,0.05) 0%, transparent 55%);
 
-  /* ---------- Shadows / glow ---------- */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
-  --glow-accent: 0 0 24px rgba(79, 142, 255, 0.35);
-  --glow-violet: 0 0 24px rgba(179, 71, 255, 0.35);
+  /* ---------- Shadows / glow (sombras suaves en claro) ---------- */
+  --shadow-sm: 0 1px 2px rgba(20,24,50,0.05), 0 4px 14px rgba(20,24,50,0.05);
+  --shadow-md: 0 6px 22px rgba(20,24,50,0.08);
+  --shadow-lg: 0 20px 50px rgba(20,24,50,0.12);
+  --glow-accent: 0 2px 12px rgba(47,127,208,0.18);
+  --glow-violet: 0 2px 12px rgba(124,92,255,0.20);
+
+  /* ---------- Superficies semánticas (sustituyen colores clavados) ---------- */
+  --overlay-bg: rgba(248, 250, 253, 0.82);  /* barras sticky / headers con blur */
+  --card-bg: #ffffff;                        /* fondo de tarjetas */
+  --card-hover: #f6f8fc;                     /* hover de tarjetas */
+  --input-bg: #ffffff;                       /* campos de entrada */
+  --chip-bg: #eef0fb;                        /* pills / etiquetas */
+  --code-bg: #eef1f8;                        /* code inline */
 
   /* ---------- Typography ---------- */
   --font-ui: 'Inter', system-ui, sans-serif;
@@ -95,4 +98,51 @@
   --z-overlay: 50;
   --z-modal: 100;
   --z-toast: 200;
+}
+
+/* =====================================================
+   Tema OSCURO original (opt-in con data-theme="dark").
+   Mantiene la "premium dark observatory" por si se cablea un toggle.
+   ===================================================== */
+:root[data-theme="dark"] {
+  --bg-0: #060812;
+  --bg-1: #0b0f1f;
+  --bg-2: #131a32;
+  --bg-3: #1c2447;
+
+  --surface-glass: rgba(28, 36, 71, 0.55);
+  --surface-glass-border: rgba(120, 145, 220, 0.18);
+
+  --line: rgba(120, 145, 220, 0.12);
+  --line-strong: rgba(120, 145, 220, 0.28);
+
+  --fg-0: #f1f4ff;
+  --fg-1: #d4daeb;
+  --fg-2: #8a93b8;
+  --fg-3: #5b6489;
+
+  --accent: #4f8eff;
+  --accent-bright: #6fa3ff;
+  --accent-deep: #1f4ed8;
+  --violet: #b347ff;
+  --violet-bright: #c875ff;
+
+  --grad-accent: linear-gradient(135deg, #4f8eff 0%, #b347ff 100%);
+  --grad-accent-soft: linear-gradient(135deg, rgba(79,142,255,0.18) 0%, rgba(179,71,255,0.18) 100%);
+  --grad-bg:
+    radial-gradient(ellipse at top left, rgba(79, 142, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(179, 71, 255, 0.08) 0%, transparent 50%);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --glow-accent: 0 0 24px rgba(79, 142, 255, 0.35);
+  --glow-violet: 0 0 24px rgba(179, 71, 255, 0.35);
+
+  --overlay-bg: rgba(6, 8, 18, 0.7);
+  --card-bg: rgba(19, 26, 50, 0.5);
+  --card-hover: rgba(28, 36, 71, 0.6);
+  --input-bg: rgba(28, 36, 71, 0.4);
+  --chip-bg: #1c2447;
+  --code-bg: #131a32;
 }

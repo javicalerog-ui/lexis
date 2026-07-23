@@ -14,7 +14,7 @@
   justify-content: space-between;
   gap: var(--s-3);
   padding: var(--s-4) var(--s-5);
-  background: rgba(6, 8, 18, 0.7);
+  background: var(--overlay-bg);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   border-bottom: 1px solid var(--line);
@@ -151,7 +151,7 @@
   grid-template-columns: 36px 1fr;
   gap: var(--s-3);
   padding: var(--s-3) var(--s-4);
-  background: rgba(11, 15, 31, 0.5);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   border-left: 2px solid var(--accent);
@@ -159,7 +159,7 @@
 }
 .step:hover {
   border-left-color: var(--violet);
-  background: rgba(19, 26, 50, 0.7);
+  background: var(--card-hover);
 }
 
 .stepN {
@@ -229,7 +229,7 @@
 
 .memoryItem {
   padding: var(--s-3) var(--s-4);
-  background: rgba(11, 15, 31, 0.45);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   transition: all var(--dur-fast) var(--ease-out);

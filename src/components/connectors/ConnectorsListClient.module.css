@@ -129,7 +129,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 4px 10px;
-  background: rgba(11, 15, 31, 0.4);
+  background: var(--chip-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
 }
@@ -208,7 +208,7 @@
 }
 
 .empty {
-  background: rgba(11, 15, 31, 0.3);
+  background: var(--card-bg);
   border: 1px dashed var(--line);
   border-radius: var(--r-lg);
 }

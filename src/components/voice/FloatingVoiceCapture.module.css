@@ -79,7 +79,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-modal, 200);
-  background: rgba(6, 8, 18, 0.72);
+  background: var(--overlay-bg);
   backdrop-filter: blur(8px) saturate(140%);
   -webkit-backdrop-filter: blur(8px) saturate(140%);
   display: flex;
@@ -298,7 +298,7 @@
   gap: var(--s-2);
   margin-bottom: var(--s-4);
   padding: 4px;
-  background: rgba(11, 15, 31, 0.4);
+  background: var(--bg-3);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
 }

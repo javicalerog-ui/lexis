@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   applicationName: 'Lexis',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'Lexis',
   },
   icons: {
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#060812',
+  themeColor: '#eef1f8',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

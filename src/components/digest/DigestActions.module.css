@@ -74,7 +74,7 @@
   align-items: center;
   gap: var(--s-2);
   padding: 4px 6px 4px 12px;
-  background: rgba(11, 15, 31, 0.55);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-full);
 }
@@ -111,7 +111,7 @@
   align-items: center;
   gap: var(--s-2);
   padding: 6px 14px 6px 8px;
-  background: rgba(11, 15, 31, 0.55);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-full);
   color: var(--fg-2);
@@ -167,7 +167,7 @@
   flex: 1;
   min-width: 200px;
   padding: 6px 12px;
-  background: rgba(11, 15, 31, 0.7);
+  background: var(--input-bg);
   border: 1px solid var(--accent);
   border-radius: var(--r-sm);
   color: var(--fg-0);

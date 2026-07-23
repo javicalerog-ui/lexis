@@ -155,7 +155,7 @@
   flex-direction: column;
   gap: var(--s-2);
   padding: var(--s-3);
-  background: rgba(11, 15, 31, 0.85);
+  background: var(--card-bg);
   border: 1px solid var(--violet);
   border-radius: var(--r-md);
   width: 100%;

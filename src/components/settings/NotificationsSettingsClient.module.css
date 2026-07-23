@@ -94,7 +94,7 @@
   font-weight: 500;
 }
 .input {
-  background: rgba(11, 15, 31, 0.4);
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 8px 10px;

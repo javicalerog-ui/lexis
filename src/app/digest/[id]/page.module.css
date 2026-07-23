@@ -12,7 +12,7 @@
   align-items: center;
   gap: var(--s-3);
   padding: var(--s-3) var(--s-5);
-  background: rgba(6, 8, 18, 0.7);
+  background: var(--overlay-bg);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   border-bottom: 1px solid var(--line);

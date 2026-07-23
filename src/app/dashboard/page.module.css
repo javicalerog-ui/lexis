@@ -11,7 +11,7 @@
   grid-template-columns: 80px 1fr 80px;
   align-items: center;
   padding: var(--s-4) var(--s-5);
-  background: rgba(6, 8, 18, 0.7);
+  background: var(--overlay-bg);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   border-bottom: 1px solid var(--line);
@@ -144,7 +144,7 @@
   flex-direction: column;
   gap: 2px;
   padding: var(--s-3) var(--s-4);
-  background: rgba(11, 15, 31, 0.4);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
 }
@@ -319,7 +319,7 @@
 .barTrack {
   position: relative;
   height: 5px;
-  background: rgba(11, 15, 31, 0.6);
+  background: var(--bg-3);
   border-radius: var(--r-full);
   overflow: hidden;
 }

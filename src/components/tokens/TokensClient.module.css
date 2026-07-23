@@ -50,7 +50,7 @@
   align-items: center;
   gap: var(--s-2);
   padding: var(--s-2) var(--s-3);
-  background: rgba(6, 8, 18, 0.85);
+  background: var(--code-bg);
   border: 1px solid var(--success);
   border-radius: var(--r-md);
   margin-bottom: var(--s-3);
@@ -173,7 +173,7 @@
 .input {
   width: 100%;
   padding: 10px 14px;
-  background: rgba(11, 15, 31, 0.7);
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   color: var(--fg-0);
@@ -201,7 +201,7 @@
   align-items: flex-start;
   gap: var(--s-2);
   padding: var(--s-3);
-  background: rgba(11, 15, 31, 0.5);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   cursor: pointer;
@@ -279,7 +279,7 @@
 .expireActive {
   padding: 6px 14px;
   font-size: 12px;
-  background: rgba(11, 15, 31, 0.5);
+  background: var(--chip-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-full);
   color: var(--fg-2);
@@ -389,7 +389,7 @@
 
 .empty {
   padding: var(--s-5);
-  background: rgba(11, 15, 31, 0.3);
+  background: var(--bg-3);
   border: 1px dashed var(--line);
   border-radius: var(--r-md);
   text-align: center;
@@ -511,7 +511,7 @@
 .docsCard {
   margin-top: var(--s-8);
   padding: var(--s-5);
-  background: rgba(11, 15, 31, 0.4);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
@@ -531,7 +531,7 @@
   font-size: 11.5px;
   line-height: 1.65;
   color: var(--fg-1);
-  background: rgba(6, 8, 18, 0.7);
+  background: var(--code-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   padding: var(--s-3) var(--s-4);

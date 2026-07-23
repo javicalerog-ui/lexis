@@ -131,7 +131,7 @@
   align-items: center;
   gap: var(--s-3);
   padding: var(--s-3);
-  background: rgba(11, 15, 31, 0.3);
+  background: var(--card-bg);
   border: 1px dashed var(--line);
   border-radius: var(--r-md);
   opacity: 0.7;
@@ -235,7 +235,7 @@
 .input, .textarea {
   width: 100%;
   padding: 10px 14px;
-  background: rgba(11, 15, 31, 0.7);
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   color: var(--fg-0);
@@ -265,7 +265,7 @@
 .schedulePill, .scheduleActive {
   padding: 6px 14px;
   font-size: 12px;
-  background: rgba(11, 15, 31, 0.5);
+  background: var(--chip-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-full);
   color: var(--fg-2);
@@ -290,7 +290,7 @@
   align-items: flex-start;
   gap: var(--s-3);
   padding: var(--s-3) var(--s-4);
-  background: rgba(11, 15, 31, 0.4);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   cursor: pointer;
@@ -346,7 +346,7 @@
 
 .configSection {
   padding: var(--s-4);
-  background: rgba(11, 15, 31, 0.3);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
 }
@@ -505,7 +505,7 @@
   align-items: center;
   gap: var(--s-2);
   padding: 8px 12px;
-  background: rgba(6, 8, 18, 0.85);
+  background: var(--code-bg);
   border: 1px solid var(--success);
   border-radius: var(--r-md);
 }
@@ -551,7 +551,7 @@
   font-size: 11px;
   line-height: 1.6;
   color: var(--fg-1);
-  background: rgba(6, 8, 18, 0.7);
+  background: var(--code-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   padding: var(--s-3);
@@ -623,7 +623,7 @@
   align-items: center;
   gap: var(--s-3);
   padding: var(--s-3);
-  background: rgba(11, 15, 31, 0.4);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   text-align: left;
