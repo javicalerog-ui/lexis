@@ -10,7 +10,7 @@
  * El cache se versiona; cambia CACHE_VERSION para invalidar tras un deploy.
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2'; // v2: sección /meetings (Acta embebida)
 const SHELL_CACHE = `lexis-shell-${CACHE_VERSION}`;
 const STATIC_CACHE = `lexis-static-${CACHE_VERSION}`;
 

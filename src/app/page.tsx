@@ -264,6 +264,9 @@ export default function HomePage() {
           <Link href="/interview" className={styles.navLink} title="Entrevista">
             ※
           </Link>
+          <Link href="/meetings" className={styles.navLink} title="Reuniones (Acta)">
+            ⏺
+          </Link>
           <Link href="/import" className={styles.navLink} title="Importar">
             ⤓
           </Link>

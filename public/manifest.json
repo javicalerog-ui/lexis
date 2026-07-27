@@ -40,6 +40,13 @@
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
+      "name": "Grabar reunión",
+      "short_name": "Reuniones",
+      "description": "Graba una reunión y genera el acta",
+      "url": "/meetings",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
       "name": "Timeline",
       "short_name": "Timeline",
       "description": "Recorrido cronológico de memorias",

@@ -17,7 +17,7 @@ import styles from './FloatingVoiceCapture.module.css';
  */
 
 const HIDDEN_PATHS = ['/', '/login'];
-const HIDDEN_PREFIXES = ['/oauth/', '/interview', '/events/preview', '/inbox', '/settings/notifications', '/settings/proactive-rules'];
+const HIDDEN_PREFIXES = ['/oauth/', '/interview', '/events/preview', '/inbox', '/settings/notifications', '/settings/proactive-rules', '/meetings'];
 
 type Mode = 'voice' | 'calendar_image';
 type Status = 'idle' | 'open' | 'ingesting' | 'success' | 'error';

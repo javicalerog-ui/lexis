@@ -1,0 +1,321 @@
+/* =====================================================
+   ACTA · estilos del grabador embebido en Lexis
+   Port de la PWA original (11-acta-grabador-reuniones/app/src/styles.css)
+   con dos cambios estructurales:
+     1. TODO scopeado bajo .acta (cero fugas al resto de Lexis).
+     2. Las variables de la paleta "tinta" original se remapean a los
+        tokens claros de Lexis (tokens.css); el sello lacre conserva su
+        identidad. Outfit/Inter ya los carga Lexis vía next/font.
+   ===================================================== */
+
+.acta {
+  --ink: var(--bg-1);          /* fondo de superficie */
+  --ink-2: var(--card-bg);     /* tarjetas */
+  --bone: var(--fg-0);         /* texto principal */
+  --bone-dim: var(--fg-2);     /* texto secundario */
+  --lacre: #b3122f;            /* sello / grabación / primaria */
+  --lacre-glow: rgba(179, 18, 47, 0.22);
+  --brass: #a07830;            /* latón ajustado a fondo claro */
+  --acta-line: var(--line);    /* hairlines de Lexis */
+  --radius: 14px;
+  --acta-font-display: var(--font-display);
+  --acta-font-body: var(--font-ui);
+
+  max-width: 620px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: var(--bone);
+  font-family: var(--acta-font-body);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.acta * { box-sizing: border-box; }
+
+/* ---------- Cabecera de la sección ---------- */
+
+.acta .brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.acta .brand h1 {
+  font-family: var(--acta-font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.acta .brand .tagline { color: var(--bone-dim); font-size: 13px; }
+
+.acta .brand .gear {
+  margin-left: auto;
+  color: var(--bone-dim);
+  text-decoration: none;
+  font-size: 20px;
+  align-self: center;
+}
+
+/* ---------- Tarjetas ---------- */
+
+.acta .card {
+  background: var(--ink-2);
+  border: 1px solid var(--acta-line);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.acta .card h2 {
+  font-family: var(--acta-font-display);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+/* ---------- Formularios ---------- */
+
+.acta label { display: block; font-size: 13px; color: var(--bone-dim); margin-bottom: 6px; }
+
+.acta select,
+.acta input[type='text'],
+.acta input[type='number'],
+.acta input[type='email'] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--acta-line);
+  background: var(--input-bg);
+  color: var(--bone);
+  font: inherit;
+}
+.acta select:focus,
+.acta input:focus,
+.acta textarea:focus {
+  outline: 2px solid var(--brass);
+  outline-offset: 1px;
+}
+
+.acta textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--acta-line);
+  background: var(--input-bg);
+  color: var(--bone);
+  font: 400 14px/1.5 var(--acta-font-body);
+  resize: vertical;
+}
+
+.acta button.primary {
+  margin-top: 14px;
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  background: var(--lacre);
+  color: #fff;
+  font: 600 15px var(--acta-font-display);
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.acta button.primary:disabled { opacity: 0.55; cursor: default; }
+.acta button.primary:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+.acta .btn-secondary {
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--acta-line);
+  background: var(--ink-2);
+  color: var(--bone);
+  font: 600 14px var(--acta-font-display);
+  cursor: pointer;
+}
+.acta .btn-secondary:disabled { opacity: 0.5; cursor: default; }
+
+.acta .btn-ghost {
+  background: none;
+  border: none;
+  color: var(--bone-dim);
+  font: 500 13px var(--acta-font-body);
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.acta .hint { margin-top: 10px; font-size: 13px; color: var(--bone-dim); }
+.acta .hint.ok { color: var(--brass); }
+.acta .row-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.acta .banner { border-color: var(--brass); }
+.acta .empty { color: var(--bone-dim); font-size: 14px; }
+
+/* ---------- Sello (grabar) ---------- */
+
+.acta .seal-wrap { display: grid; place-items: center; padding: 8px 0 4px; }
+
+.acta .seal {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  border: none;
+  background: radial-gradient(circle at 32% 28%, #d43b55, var(--lacre) 58%, #7c0c20);
+  box-shadow: 0 0 0 6px var(--ink-2), 0 0 0 7px var(--acta-line), 0 10px 34px var(--lacre-glow);
+  color: #fff;
+  font: 700 15px var(--acta-font-display);
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+.acta .seal:disabled { filter: saturate(0.35) brightness(0.9); cursor: default; }
+
+.acta .seal-note { margin-top: 12px; text-align: center; font-size: 13px; color: var(--bone-dim); }
+
+@keyframes acta-seal-pulse {
+  0% { box-shadow: 0 0 0 6px var(--ink-2), 0 0 0 7px var(--acta-line), 0 0 0 0 var(--lacre-glow); }
+  70% { box-shadow: 0 0 0 6px var(--ink-2), 0 0 0 7px var(--acta-line), 0 0 0 26px rgba(179, 18, 47, 0); }
+  100% { box-shadow: 0 0 0 6px var(--ink-2), 0 0 0 7px var(--acta-line), 0 0 0 0 rgba(179, 18, 47, 0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .acta .seal { transition: transform 0.15s ease; }
+  .acta .seal:not(:disabled):active { transform: scale(0.96); }
+  .acta .seal.recording { animation: acta-seal-pulse 1.6s ease-out infinite; }
+}
+
+/* ---------- Grabación ---------- */
+
+.acta .timer {
+  margin-top: 16px;
+  font: 600 40px var(--acta-font-display);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.acta .levelbar {
+  margin-top: 10px;
+  width: min(240px, 70%);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ink);
+  border: 1px solid var(--acta-line);
+  overflow: hidden;
+}
+.acta .levelbar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brass), var(--lacre));
+  transition: width 0.12s linear;
+}
+
+/* ---------- Lista de actas ---------- */
+
+.acta .rec-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; }
+
+.acta .rec-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--acta-line);
+  border-radius: 10px;
+  background: var(--ink);
+}
+.acta .rec-list button.rec-item {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.acta .rec-item .title { font-weight: 500; }
+.acta .rec-item .meta { font-size: 12px; color: var(--bone-dim); }
+
+.acta .status {
+  align-self: center;
+  font: 600 11px var(--acta-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brass);
+  white-space: nowrap;
+}
+.acta .status.synced { color: var(--success); }
+.acta .status.failed { color: var(--lacre); }
+
+/* ---------- Detalle y revisión ---------- */
+
+.acta .meta { font-size: 13px; color: var(--bone-dim); }
+
+.acta .stages {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+}
+.acta .stages li {
+  font: 600 11px var(--acta-font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--acta-line);
+  color: var(--bone-dim);
+}
+.acta .stages li.done { color: var(--brass); border-color: var(--brass); }
+.acta .stages li.active {
+  color: var(--bone);
+  border-color: var(--lacre);
+  background: rgba(179, 18, 47, 0.10);
+}
+
+.acta .editor { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.acta .editor-sec label { margin-bottom: 6px; }
+
+.acta .ai-list { display: flex; flex-direction: column; gap: 8px; }
+.acta .ai-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--acta-line);
+  border-radius: 10px;
+  background: var(--ink);
+}
+.acta .ai-row input {
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--acta-line);
+  background: var(--input-bg);
+  color: var(--bone);
+  font: 400 14px var(--acta-font-body);
+}
+.acta .ai-row .btn-ghost { justify-self: end; }
+
+.acta .segments { display: flex; flex-direction: column; gap: 2px; max-height: 340px; overflow-y: auto; }
+.acta .seg {
+  display: flex;
+  gap: 10px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--bone);
+  font: 400 14px/1.5 var(--acta-font-body);
+  padding: 6px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.acta .seg:hover { background: var(--ink); }
+.acta .seg-t {
+  color: var(--brass);
+  font: 600 12px var(--acta-font-display);
+  min-width: 44px;
+  font-variant-numeric: tabular-nums;
+}
+
+.acta .check { display: flex; gap: 10px; align-items: center; font-size: 14px; color: var(--bone); }
+.acta .check input { width: 18px; height: 18px; accent-color: var(--lacre); }
