@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const enriched = await enrichMemories(supabase, data ?? []);
+  const enriched = await enrichMemories(supabase, data ?? [], user.id);
 
   return NextResponse.json({
     query: body.query ?? null,

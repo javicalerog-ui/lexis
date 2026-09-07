@@ -62,7 +62,7 @@ export async function POST(req: Request) {
   const page = hasMore ? rows.slice(0, body.limit) : rows;
   const nextCursor = hasMore ? page[page.length - 1].captured_at : null;
 
-  const enriched = await enrichMemories(supabase, page);
+  const enriched = await enrichMemories(supabase, page, user.id);
 
   return NextResponse.json({
     count: enriched.length,

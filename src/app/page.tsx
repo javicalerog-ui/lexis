@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { InboxBadge } from '@/components/inbox/InboxBadge';
+import { NavDrawer } from '@/components/nav/NavDrawer';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageList, type Message } from '@/components/chat/MessageList';
 import { parsePdf } from '@/lib/ingestion/pdf';
@@ -18,7 +17,7 @@ type Mode = 'capture' | 'search';
 
 export default function HomePage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [mode, setMode] = useState<Mode>('capture');
+  const [mode, setMode] = useState<Mode>('search');
   const [busy, setBusy] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -246,49 +245,7 @@ export default function HomePage() {
           </button>
         </div>
         <div className={styles.headerRight}>
-          <Link href="/feed" className={styles.navLinkFeed} title="Feed proactivo">
-            ◈
-          </Link>
-          <Link href="/dashboard" className={styles.navLink} title="Dashboard">
-            ⌬
-          </Link>
-          <Link href="/projects" className={styles.navLink} title="Proyectos">
-            ✦
-          </Link>
-          <Link href="/entities" className={styles.navLink} title="Entidades">
-            ◇
-          </Link>
-          <Link href="/timeline" className={styles.navLink} title="Timeline">
-            ⌖
-          </Link>
-          <Link href="/interview" className={styles.navLink} title="Entrevista">
-            ※
-          </Link>
-          <Link href="/meetings" className={styles.navLink} title="Reuniones (Acta)">
-            ⏺
-          </Link>
-          <Link href="/import" className={styles.navLink} title="Importar">
-            ⤓
-          </Link>
-          <Link href="/digest" className={styles.navLink} title="Digest periódico">
-            ✉
-          </Link>
-          <InboxBadge />
-          <Link href="/connectors" className={styles.navLink} title="Connectors">
-            ⇲
-          </Link>
-          <Link href="/export" className={styles.navLink} title="Exportar grafo">
-            ⤒
-          </Link>
-          <Link href="/settings/password" className={styles.navLink} title="Contraseña">
-            ⚿
-          </Link>
-          <Link href="/settings/tokens" className={styles.navLink} title="Tokens API">
-            ⚙
-          </Link>
-          <button onClick={logout} className={styles.logout} title="Cerrar sesión">
-            ⏻
-          </button>
+          <NavDrawer onLogout={logout} />
         </div>
       </header>
 

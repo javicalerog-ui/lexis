@@ -73,10 +73,17 @@ export interface EnrichedMemory extends MemoryRow {
 /**
  * Dado un set de MemoryRow, busca sus enlaces a proyectos y entidades
  * y devuelve EnrichedMemory[]. Una sola query batch por relación.
+ *
+ * `userId` es obligatorio y se aplica con `!inner` sobre la tabla
+ * enlazada: algunos llamadores usan el cliente service role (bypassa
+ * RLS), así que el filtro de propietario no puede depender solo de
+ * RLS — un enlace cruzado entre usuarios no debe filtrar metadatos
+ * del proyecto/entidad ajeno (fix P1, 2026-09-08).
  */
 export async function enrichMemories(
   supabase: any,
-  rows: MemoryRow[]
+  rows: MemoryRow[],
+  userId: string
 ): Promise<EnrichedMemory[]> {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.id);
@@ -84,12 +91,14 @@ export async function enrichMemories(
   const [pRes, eRes] = await Promise.all([
     supabase
       .from('memory_projects')
-      .select('memory_id, projects(id, slug, name)')
-      .in('memory_id', ids),
+      .select('memory_id, projects!inner(id, slug, name, user_id)')
+      .in('memory_id', ids)
+      .eq('projects.user_id', userId),
     supabase
       .from('memory_entities')
-      .select('memory_id, entities(id, name, entity_type)')
-      .in('memory_id', ids),
+      .select('memory_id, entities!inner(id, name, entity_type, user_id)')
+      .in('memory_id', ids)
+      .eq('entities.user_id', userId),
   ]);
 
   const projByMem = new Map<string, EnrichedMemory['projects']>();

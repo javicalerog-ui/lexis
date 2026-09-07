@@ -34,7 +34,13 @@ export default function LoginPage() {
     if (mode === 'magic') {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        // shouldCreateUser:false — el enlace mágico NUNCA da de alta cuentas
+        // nuevas (refuerzo en código del cierre de signups del Dashboard).
+        // Con 2 usuarios reales, el alta es siempre administrada, no por login.
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: false,
+        },
       });
       if (error) {
         setStatus('error');

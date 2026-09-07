@@ -43,7 +43,7 @@ export async function refreshProjectSummary(
   // 1. Cargar proyecto
   const { data: project, error: pErr } = await supabase
     .from('projects')
-    .select('id, name, description, status, rolling_summary_updated_at, last_activity_at')
+    .select('id, user_id, name, description, status, rolling_summary_updated_at, last_activity_at')
     .eq('id', projectId)
     .single();
 
@@ -65,20 +65,20 @@ export async function refreshProjectSummary(
     }
   }
 
-  // 3. Últimas memorias del proyecto
+  // 3. Últimas memorias del proyecto — activas, del mismo propietario que
+  //    el proyecto (fix P1: un enlace cruzado no debe inyectar contenido
+  //    ajeno en este resumen aunque exista), ordenadas por fecha en SQL
+  //    antes del LIMIT (fix P2: ordenar por memory_id no daba recencia).
   const { data: memoryLinks } = await supabase
     .from('memory_projects')
-    .select('memory_id, memories(id, content, summary, captured_at, source_type, status)')
+    .select('memory_id, memories!inner(id, content, summary, captured_at, source_type, status, user_id)')
     .eq('project_id', projectId)
-    .order('memory_id', { ascending: false })
+    .eq('memories.status', 'active')
+    .eq('memories.user_id', project.user_id)
+    .order('captured_at', { foreignTable: 'memories', ascending: false })
     .limit(MAX_MEMORIES_PER_REFRESH);
 
-  const memories = (memoryLinks ?? [])
-    .map((m: any) => m.memories)
-    .filter((m: any) => m && m.status === 'active')
-    .sort((a: any, b: any) =>
-      a.captured_at < b.captured_at ? 1 : -1
-    );
+  const memories = (memoryLinks ?? []).map((m: any) => m.memories);
 
   if (!memories.length) {
     return { project_id: projectId, refreshed: false, reason: 'no_memories' };

@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const enriched = await enrichMemories(auth.supabase, data ?? []);
+  const enriched = await enrichMemories(auth.supabase, data ?? [], auth.user_id);
 
   return NextResponse.json({
     query: body.query ?? null,

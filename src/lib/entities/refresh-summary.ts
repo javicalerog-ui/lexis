@@ -44,23 +44,25 @@ export async function refreshEntitySummary(
 
   if (!entity) throw new Error('Entidad no encontrada');
 
-  // 2. Memorias activas que la mencionan
+  // 2. Memorias activas que la mencionan — del mismo propietario que la
+  //    entidad (fix P1: un enlace cruzado no debe inyectar contenido ajeno
+  //    en esta ficha), ordenadas por fecha en SQL antes del LIMIT (fix P2:
+  //    el corte en 80 sin order previo daba una muestra arbitraria).
   const { data: memLinks } = await supabase
     .from('memory_entities')
     .select(
-      'role, memories(id, summary, content, source_type, captured_at, status)'
+      'role, memories!inner(id, summary, content, source_type, captured_at, status, user_id)'
     )
     .eq('entity_id', entityId)
-    .limit(80);
+    .eq('memories.status', 'active')
+    .eq('memories.user_id', userId)
+    .order('captured_at', { foreignTable: 'memories', ascending: false })
+    .limit(MAX_MEMORIES_IN_PROMPT);
 
-  const memories = (memLinks ?? [])
-    .map((l: any) => ({
-      role: l.role,
-      ...l.memories,
-    }))
-    .filter((m: any) => m && m.status === 'active')
-    .sort((a: any, b: any) => (a.captured_at < b.captured_at ? 1 : -1))
-    .slice(0, MAX_MEMORIES_IN_PROMPT);
+  const memories = (memLinks ?? []).map((l: any) => ({
+    role: l.role,
+    ...l.memories,
+  }));
 
   // Si no hay memorias, no generamos summary y limpiamos el flag stale
   if (memories.length === 0) {
@@ -75,12 +77,14 @@ export async function refreshEntitySummary(
     return null;
   }
 
-  // 3. Proyectos donde aparece (via las memorias enlazadas)
+  // 3. Proyectos donde aparece (via las memorias enlazadas), mismo
+  //    propietario que la entidad (fix P1, defensa en profundidad).
   const memIds = memories.map((m: any) => m.id);
   const { data: projectLinks } = await supabase
     .from('memory_projects')
-    .select('projects(id, name, slug, status)')
-    .in('memory_id', memIds);
+    .select('projects!inner(id, name, slug, status, user_id)')
+    .in('memory_id', memIds)
+    .eq('projects.user_id', userId);
 
   const projectMap = new Map<string, { name: string; slug: string; status: string; count: number }>();
   for (const l of projectLinks ?? []) {
