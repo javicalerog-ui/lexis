@@ -54,5 +54,25 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Modo Silvestre: usuarios con app_metadata.ui_mode='simple' viven en una
+  // sola pantalla (/asistente). Cualquier PÁGINA del app completo los reenvía
+  // ahí. No se tocan las /api (las gobierna su propio auth) ni los estáticos.
+  if (session && session.user?.app_metadata?.ui_mode === 'simple') {
+    const esApi = pathname.startsWith('/api');
+    const esEstatico =
+      pathname.startsWith('/_next') ||
+      pathname.startsWith('/icons') ||
+      pathname === '/favicon.ico' ||
+      pathname === '/manifest.json' ||
+      pathname === '/sw.js';
+    const permitido = pathname === '/asistente' || isAuthRoute || esApi || esEstatico;
+    if (!permitido) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/asistente';
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
+  }
+
   return response;
 }
