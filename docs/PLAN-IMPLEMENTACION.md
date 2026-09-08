@@ -120,6 +120,16 @@ Por este orden de valor, pero todo puede esperar a que Silvestre ya esté usando
 - Typecheck verde. NO verificable en navegador desde aquí (la home está tras login + hay otro dev server ocupando la carpeta); se verá al desplegar en el móvil de Javi.
 - PENDIENTE: desplegar (push desde terminal de Javi → Vercel javicalerog-ui/lexis). Limpiar 1-2 memorias basura creadas al importar por error los Excel de datos (SQL de una línea, cuando se quiera).
 
+## Auditoría externa (otro LLM) 2026-09-08 — triage
+Informe completo en `docs/AUDITORIA-PROFUNDIDAD-2026-09-08.md`. Cruzado:
+- YA arreglado y desplegado (5449c5f): fuga cross-user P1, resúmenes P2, shouldCreateUser, rol admin.
+- Arreglado local (pendiente deploy): **[ALTO] Markdown ejecutaba JS (gray-matter engine)** → `markdown.ts` fuerza YAML + desactiva motores js/coffee; **[MEDIO] PDF worker version mismatch** → `pdf.ts` usa `mod.version` vía jsdelivr (pdfjs 4.10.38).
+- Confirmado a la baja (coincide con nuestra corrección): RPC p_user_id son SECURITY INVOKER, no fuga directa.
+- ANTES de Silvestre: [ALTO] SW cachea HTML autenticado tras logout (fuga multiusuario); [ALTO] push marca notified aunque falle + [MEDIO] snooze/reopen no resetea notified_at (agenda).
+- DIFERIDO hasta activar conectores (no están on): SSRF RSS, filtro Gmail que deriva, cursores que pierden items, Drive/Calendar ignoran updates/cancelaciones, cron connectors reporta 0 fallos, reauth Google identidad. CANDADO: no encender conectores sin arreglarlos.
+- Deuda: validar JSON del LLM con Zod (raíz de "LLM no devolvió JSON parseable"), tests de 2 usuarios/cursores/push. Varios MEDIO menores (digest atómico, timeline paginación, export paginación, DST, all-day, deadlines IA, transcribe 4.5MB Vercel, cuotas IA, acta audio cross-account).
+- Nota: SOP control = DRIFT (sync-portfolio-sop pendiente).
+
 ## Mejoras detectadas en uso (2026-09-08)
 - **Captura/import se rompe con Excel de datos grandes:** al soltar `Ascer_nac_exp_y_Confindustria.xlsx` (643 KB) en la pantalla Capturar, el pipeline devuelve `FetchJsonError: LLM no devolvió JSON parseable ni en Fast ni en Deep` (el clasificador manda el contenido tabular enorme al LLM y este no devuelve JSON válido / excede tokens). Doble problema: (a) esos Excel son fuente del motor `datos`, no memorias; (b) el pipeline debería degradar con un mensaje claro ("parece un fichero de datos, va al motor, no a memorias") en vez de un error técnico. Mejora: detectar xlsx muy grandes/tabulares y avisar; y hacer el parseo de JSON del clasificador tolerante a fallo. No urgente.
 

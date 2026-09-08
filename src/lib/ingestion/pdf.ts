@@ -13,9 +13,11 @@ let pdfjsPromise: Promise<typeof PdfjsLib> | null = null;
 async function loadPdfjs() {
   if (!pdfjsPromise) {
     pdfjsPromise = import('pdfjs-dist').then((mod) => {
-      // worker desde CDN de Mozilla
-      mod.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.mjs';
+      // El worker DEBE coincidir con la versión instalada de pdfjs-dist o
+      // PDF.js aborta (auditoría 2026-09-08: estaba fijado a 4.7.76 con 4.10.x
+      // instalado → la importación de PDF fallaba). Usamos mod.version para que
+      // siempre cuadre, servido desde jsDelivr (sirve cualquier versión de npm).
+      mod.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${mod.version}/build/pdf.worker.min.mjs`;
       return mod;
     });
   }
