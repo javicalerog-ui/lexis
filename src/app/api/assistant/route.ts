@@ -16,6 +16,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { isAdmin } from '@/lib/auth/admin';
 import { responderPreguntaDatos, type TurnoChat } from '@/lib/datos/qa';
 import { synthesizeAnswer } from '@/lib/answer/synthesize';
+import { clasificarIntencion, capturarRegistro } from '@/lib/assistant/registro';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -45,6 +46,27 @@ export async function POST(req: Request) {
   }
 
   const datosAllowed = isAdmin(user) || user.app_metadata?.datos_access === true;
+
+  // 0) ¿Quiere REGISTRAR algo ("apunta que...", "recuerda que...")? Entonces
+  //    se guarda como memoria por el mismo pipeline que Capturar y confirmamos.
+  //    El clasificador está sesgado: en caso de duda es consulta (no se
+  //    escribe nada por accidente).
+  //    (clasificarIntencion nunca lanza: ante fallo devuelve 'consulta')
+  const intencion = await clasificarIntencion(body.pregunta);
+  if (intencion === 'registro') {
+    try {
+      const answer = await capturarRegistro(supabase, user.id, body.pregunta);
+      return NextResponse.json({ answer, kind: 'registro' });
+    } catch {
+      // Si el guardado falla, se DICE — jamás fingir que se guardó ni
+      // responder otra cosa dejando la nota perdida en silencio.
+      return NextResponse.json({
+        answer:
+          'He entendido que quieres que lo apunte, pero no he podido guardarlo ahora mismo. Vuelve a enviármelo en un momento, por favor.',
+        kind: 'registro',
+      });
+    }
+  }
 
   // 1) ¿Es una pregunta de datos de negocio? (solo para quien tiene acceso)
   if (datosAllowed) {
