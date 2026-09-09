@@ -1,22 +1,27 @@
 // =====================================================
 // Registro desde el chat del asistente (modo Silvestre)
 //
-// Una sola caja de texto para todo: además de PREGUNTAR (datos o memoria),
-// el usuario puede REGISTRAR ("apunta que...", "recuerda que...") y eso se
-// guarda como memoria por el MISMO pipeline que la pantalla Capturar
-// (resumen LLM + embedding + dedupe + proyectos/entidades + eventos).
+// CAPTURA-TODO (decisión 2026-09-08): el clasificador NUNCA decide si un
+// mensaje se guarda — TODO turno del usuario se ingesta por el MISMO pipeline
+// que Capturar (resumen LLM + embedding + dedupe + proyectos/entidades +
+// eventos). Un fallo de clasificación degrada el etiquetado o la respuesta,
+// jamás la recuperabilidad: nada de lo que se diga queda fuera de la memoria.
+// El dedupe del pipeline se encarga del ruido (preguntas triviales →
+// 'redundant'/'unclear', no ensucian).
 //
-// Clasificación en dos cintas, sesgada a lo seguro:
+// La clasificación registro/consulta sirve SOLO para dar forma a la
+// respuesta: si pidió registrar explícitamente («apunta que...»), la
+// respuesta es la confirmación «Anotado» (siempre visible); si preguntó,
+// la respuesta sale del motor de datos o de la memoria.
 //   1. Heurística: interrogaciones/interrogativos → consulta;
 //      verbos imperativos de registro al inicio → registro.
-//   2. LLM (fast) solo para lo ambiguo. En caso de duda o fallo → consulta
-//      (nunca guardamos nada por accidente; responder de más es inocuo,
-//      escribir de más no).
+//   2. LLM (fast) solo para lo ambiguo; en duda o fallo → consulta.
 // =====================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { chat } from '@/lib/llm/escalation';
 import { ingest } from '@/lib/ingestion/pipeline';
+import type { IngestionResult } from '@/types/domain';
 
 export type Intencion = 'registro' | 'consulta';
 
@@ -79,17 +84,21 @@ export async function clasificarIntencion(texto: string): Promise<Intencion> {
 
 // --- Captura + confirmación ------------------------------------------------
 
-export async function capturarRegistro(
+/** Ingesta un turno del chat como memoria (pipeline completo de Capturar). */
+export function capturarTurno(
   supabase: SupabaseClient,
   userId: string,
   texto: string
-): Promise<string> {
-  const result = await ingest(supabase, userId, {
+): Promise<IngestionResult> {
+  return ingest(supabase, userId, {
     source_type: 'text',
     raw_text: texto,
     source_metadata: { via: 'asistente' },
   });
+}
 
+/** Redacta la confirmación visible cuando el usuario pidió registrar. */
+export function confirmacionRegistro(result: IngestionResult): string {
   if (result.decision === 'redundant') {
     return 'Eso ya lo tenía anotado de antes, así que no lo he duplicado. Si quieres matizarlo o añadir algo nuevo, dímelo.';
   }

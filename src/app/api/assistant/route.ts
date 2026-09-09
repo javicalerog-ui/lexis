@@ -16,7 +16,11 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { isAdmin } from '@/lib/auth/admin';
 import { responderPreguntaDatos, type TurnoChat } from '@/lib/datos/qa';
 import { synthesizeAnswer } from '@/lib/answer/synthesize';
-import { clasificarIntencion, capturarRegistro } from '@/lib/assistant/registro';
+import {
+  clasificarIntencion,
+  capturarTurno,
+  confirmacionRegistro,
+} from '@/lib/assistant/registro';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -47,28 +51,34 @@ export async function POST(req: Request) {
 
   const datosAllowed = isAdmin(user) || user.app_metadata?.datos_access === true;
 
-  // 0) ¿Quiere REGISTRAR algo ("apunta que...", "recuerda que...")? Entonces
-  //    se guarda como memoria por el mismo pipeline que Capturar y confirmamos.
-  //    El clasificador está sesgado: en caso de duda es consulta (no se
-  //    escribe nada por accidente).
-  //    (clasificarIntencion nunca lanza: ante fallo devuelve 'consulta')
+  // 0) CAPTURA-TODO (decisión 2026-09-08): TODO turno del usuario se guarda
+  //    como memoria — el clasificador NUNCA decide si se guarda, solo da forma
+  //    a la respuesta. Corre en PARALELO con el cálculo de la respuesta para
+  //    no sumar latencia; se espera antes de devolver (en serverless una
+  //    promesa huérfana puede morir congelada a mitad de escritura).
+  const captura = capturarTurno(supabase, user.id, body.pregunta).then(
+    (result) => ({ ok: true as const, result }),
+    () => ({ ok: false as const, result: null })
+  );
+
+  // (clasificarIntencion nunca lanza: ante fallo devuelve 'consulta')
   const intencion = await clasificarIntencion(body.pregunta);
+
+  // 1) Pidió registrar explícitamente → la respuesta ES la confirmación,
+  //    siempre visible. Si el guardado falló, se DICE — jamás fingir que se
+  //    guardó ni dejar una nota perdida en silencio.
   if (intencion === 'registro') {
-    try {
-      const answer = await capturarRegistro(supabase, user.id, body.pregunta);
-      return NextResponse.json({ answer, kind: 'registro' });
-    } catch {
-      // Si el guardado falla, se DICE — jamás fingir que se guardó ni
-      // responder otra cosa dejando la nota perdida en silencio.
-      return NextResponse.json({
-        answer:
-          'He entendido que quieres que lo apunte, pero no he podido guardarlo ahora mismo. Vuelve a enviármelo en un momento, por favor.',
-        kind: 'registro',
-      });
-    }
+    const c = await captura;
+    return NextResponse.json({
+      answer: c.ok
+        ? confirmacionRegistro(c.result)
+        : 'He entendido que quieres que lo apunte, pero no he podido guardarlo ahora mismo. Vuelve a enviármelo en un momento, por favor.',
+      kind: 'registro',
+    });
   }
 
-  // 1) ¿Es una pregunta de datos de negocio? (solo para quien tiene acceso)
+  // 2) ¿Es una pregunta de datos de negocio? (solo para quien tiene acceso)
+  let payload: { answer: string; kind: string; grounded?: boolean } | null = null;
   if (datosAllowed) {
     try {
       const svc = createServiceClient();
@@ -78,21 +88,29 @@ export async function POST(req: Request) {
         body.historial as TurnoChat[] | undefined
       );
       if (answer !== null) {
-        return NextResponse.json({ answer, kind: 'datos' });
+        payload = { answer, kind: 'datos' };
       }
     } catch {
       // si el motor de datos falla, no rompemos el chat: caemos a memoria
     }
   }
 
-  // 2) Si no es de datos, responder desde su memoria personal (RAG con citas).
-  try {
-    const res = await synthesizeAnswer(supabase, user.id, body.pregunta);
-    return NextResponse.json({ answer: res.answer_md, kind: 'memoria', grounded: res.grounded });
-  } catch (e) {
-    return NextResponse.json(
-      { error: 'assistant_failed', detail: String(e).slice(0, 300) },
-      { status: 500 }
-    );
+  // 3) Si no es de datos, responder desde su memoria personal (RAG con citas).
+  if (!payload) {
+    try {
+      const res = await synthesizeAnswer(supabase, user.id, body.pregunta);
+      payload = { answer: res.answer_md, kind: 'memoria', grounded: res.grounded };
+    } catch (e) {
+      await captura; // la captura del turno no se pierde aunque falle la respuesta
+      return NextResponse.json(
+        { error: 'assistant_failed', detail: String(e).slice(0, 300) },
+        { status: 500 }
+      );
+    }
   }
+
+  // La ingesta del turno termina antes de responder (fallo aquí no rompe la
+  // respuesta: un turno-consulta no contiene información nueva que perder).
+  await captura;
+  return NextResponse.json(payload);
 }
