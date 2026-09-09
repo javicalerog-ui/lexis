@@ -32,7 +32,7 @@ cd "C:\Users\ES00500148\Desktop\Proyectos IA\10-lexis-segundo-cerebro"
 $env:HTTPS_PROXY='http://172.22.1.121:8080'; git push javicalerog-ui main
 ```
 
-✅ Verás: unas líneas que terminan en `main -> main` sin errores (sube `0b6b3c6` motor + `a25c252` chat + `d05f1c9` registro).
+✅ Verás: unas líneas que terminan en `main -> main` sin errores (sube todo el go-live: motor de datos, chat de Silvestre, captura-todo y esta guía).
 ⚠️ Si pide usuario/contraseña o da error de autenticación: dime el mensaje exacto y lo resolvemos (NO pegues credenciales en el chat).
 ⚠️ **No hagas push a `origin`** — solo a `javicalerog-ui` (origin tiene un commit divergente del workflow que gestionamos aparte).
 
