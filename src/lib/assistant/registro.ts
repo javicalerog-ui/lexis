@@ -72,7 +72,11 @@ export async function clasificarIntencion(texto: string): Promise<Intencion> {
       tier: 'fast',
       json: true,
       temperature: 0,
-      max_tokens: 30,
+      // El modelo razona de forma obligatoria (~400 tokens) antes de la salida:
+      // con 30 el JSON nunca cabía y el clasificador LLM quedaba muerto (caía
+      // siempre al default 'consulta'). Con margen sí clasifica los casos
+      // ambiguos que la heurística no cubre.
+      max_tokens: 600,
     });
     const parsed = JSON.parse(res.text.trim().replace(/^```json\s*|\s*```$/g, ''));
     return parsed?.intencion === 'registro' ? 'registro' : 'consulta';

@@ -21,6 +21,13 @@ export interface OpenRouterOptions {
   temperature?: number;
   max_tokens?: number;
   response_format?: { type: 'json_object' };
+  // Control del "pensamiento" del modelo. Los modelos actuales (gemini-3.5,
+  // claude-4.6) razonan de forma OBLIGATORIA y esos tokens salen del mismo
+  // presupuesto que la respuesta: si max_tokens es bajo, el razonamiento se
+  // come la salida y esta llega cortada (finish_reason=length). Por defecto
+  // pedimos effort 'low' para minimizar ese gasto; aun así hay que dar
+  // max_tokens con margen holgado en cada llamada.
+  reasoning?: { effort?: 'low' | 'medium' | 'high'; max_tokens?: number };
 }
 
 interface OpenRouterRaw {
@@ -61,6 +68,7 @@ export async function callOpenRouter(opts: OpenRouterOptions): Promise<{
           ...opts,
           temperature: opts.temperature ?? 0.3,
           max_tokens: opts.max_tokens ?? 1024,
+          reasoning: opts.reasoning ?? { effort: 'low' },
         }),
         signal: AbortSignal.timeout(45_000),
       });

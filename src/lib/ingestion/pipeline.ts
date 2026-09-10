@@ -52,7 +52,10 @@ ${input.raw_text.slice(0, 12_000)}
     {
       system: SUMMARIZE_PROMPT,
       temperature: 0.2,
-      max_tokens: 800,
+      // Holgado: el modelo razona de forma obligatoria; con 800 el JSON del
+      // resumen podía salir cortado y romper la captura (esto es captura-todo,
+      // no puede fallar en silencio).
+      max_tokens: 2000,
       confidence_field: 'confidence' as keyof SummarizeOutput,
     }
   );

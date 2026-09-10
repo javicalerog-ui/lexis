@@ -155,33 +155,28 @@ export async function responderPreguntaDatos(
 
   const { fecha, anio } = hoyMadrid();
 
-  // [DIAG TEMPORAL] Con DATOS_DEBUG=1 se devuelve el detalle del fallo en la
-  // propia respuesta para diagnosticar el go-live. QUITAR después.
-  const DIAG = process.env.DATOS_DEBUG === '1';
-
   let bruto: string;
   try {
     const resp = await chat(conContexto(pregunta, historial), {
       system: SQL_PROMPT(esquema, fecha, anio),
       tier: 'fast',
       temperature: 0,
-      max_tokens: 500,
+      // Holgado: el modelo razona de forma obligatoria y esos tokens comparten
+      // presupuesto con la salida; con 500 el SQL salía cortado a veces.
+      max_tokens: 1500,
     });
     bruto = resp.text;
-  } catch (e) {
-    if (DIAG) return `[DIAG] fallo en LLM (generación SQL): ${String(e).slice(0, 300)}`;
+  } catch {
     return null;
   }
 
   const sql = limpiarSql(bruto);
   if (!sql || sql.toUpperCase().startsWith('IMPOSIBLE')) {
-    if (DIAG) return `[DIAG] el LLM no dio SQL. bruto="${String(bruto).slice(0, 300)}"`;
     return null;
   }
 
   const res = await ejecutarSqlDatos(supabase, sql);
   if (!res.ok) {
-    if (DIAG) return `[DIAG] RPC ok:false\nSQL: ${sql}\nERROR: ${res.error ?? '(sin mensaje)'}`;
     return (
       'No he podido calcular eso con los datos que tengo cargados. ' +
       'Si me lo planteas de otra forma, lo intento de nuevo.'
@@ -194,7 +189,9 @@ export async function responderPreguntaDatos(
       system: RESPUESTA_PROMPT,
       tier: 'fast',
       temperature: 0,
-      max_tokens: 800,
+      // Holgado: razonamiento obligatorio + respuesta de 4 bloques. Con 800 la
+      // respuesta salía cortada a media palabra.
+      max_tokens: 2000,
     });
     return redac.text || `Esto es lo que sale de los datos:\n\n${tabla}`;
   } catch {
