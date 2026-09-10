@@ -155,6 +155,10 @@ export async function responderPreguntaDatos(
 
   const { fecha, anio } = hoyMadrid();
 
+  // [DIAG TEMPORAL] Con DATOS_DEBUG=1 se devuelve el detalle del fallo en la
+  // propia respuesta para diagnosticar el go-live. QUITAR después.
+  const DIAG = process.env.DATOS_DEBUG === '1';
+
   let bruto: string;
   try {
     const resp = await chat(conContexto(pregunta, historial), {
@@ -164,17 +168,20 @@ export async function responderPreguntaDatos(
       max_tokens: 500,
     });
     bruto = resp.text;
-  } catch {
+  } catch (e) {
+    if (DIAG) return `[DIAG] fallo en LLM (generación SQL): ${String(e).slice(0, 300)}`;
     return null;
   }
 
   const sql = limpiarSql(bruto);
   if (!sql || sql.toUpperCase().startsWith('IMPOSIBLE')) {
+    if (DIAG) return `[DIAG] el LLM no dio SQL. bruto="${String(bruto).slice(0, 300)}"`;
     return null;
   }
 
   const res = await ejecutarSqlDatos(supabase, sql);
   if (!res.ok) {
+    if (DIAG) return `[DIAG] RPC ok:false\nSQL: ${sql}\nERROR: ${res.error ?? '(sin mensaje)'}`;
     return (
       'No he podido calcular eso con los datos que tengo cargados. ' +
       'Si me lo planteas de otra forma, lo intento de nuevo.'
