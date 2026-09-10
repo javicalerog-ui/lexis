@@ -7,16 +7,20 @@
 -- `datos` y CERO acceso a public/auth. Un intento de leer public.memories o
 -- auth.users falla por privilegios, no por parsing.
 --
--- Truco para esquivar el muro de Supabase (no se puede crear/transferir en
--- public): la función vive en `datos` (postgres la puede crear ahí), es
--- SECURITY DEFINER (corre como postgres), y hace `SET LOCAL ROLE datos_ro`
--- ANTES de ejecutar el SQL del LLM → baja privilegios sin transferir owner.
+-- Diseño (v2, corregido en el go-live 2026-09-10): la función vive en `datos`
+-- y es SECURITY DEFINER **propiedad de datos_ro** → el SQL del LLM corre con
+-- los privilegios de datos_ro directamente. La v1 hacía `SET LOCAL ROLE
+-- datos_ro` dentro de la función, pero Postgres lo PROHÍBE en security
+-- definer (42501 "cannot set parameter role within security-definer
+-- function"). La transferencia de owner que falló en agosto era en `public`
+-- (datos_ro sin CREATE ahí); en el schema `datos` sí se puede: se concede
+-- CREATE temporalmente, se transfiere, y se revoca.
 --
 -- Requisito para invocarla por rpc: exponer `datos` en Dashboard → Settings →
 -- API → Exposed schemas (las tablas siguen sin grants para anon/authenticated).
 -- =====================================================
 
--- 1. Rol de solo lectura (sin login; solo se usa vía SET LOCAL ROLE).
+-- 1. Rol de solo lectura (sin login; solo existe para ser owner de run_query).
 do $$
 begin
   if not exists (select 1 from pg_roles where rolname = 'datos_ro') then
@@ -24,15 +28,19 @@ begin
   end if;
 end $$;
 
--- postgres debe ser miembro de datos_ro para poder SET ROLE a él dentro de la
--- función SECURITY DEFINER.
+-- postgres debe ser miembro de datos_ro para poder transferirle el owner de
+-- la función (y para poder seguir editándola después).
 grant datos_ro to postgres;
 
 grant usage on schema datos to datos_ro;
 grant select on all tables in schema datos to datos_ro;
 alter default privileges in schema datos grant select on tables to datos_ro;
 
--- 2. Ejecutor seguro.
+-- 2. Ejecutor seguro (owner = datos_ro; ver cabecera).
+-- CREATE temporal en datos: requisito de Postgres para poder ser owner de un
+-- objeto del schema. Se revoca al final.
+grant create on schema datos to datos_ro;
+
 create or replace function datos.run_query(p_sql text)
 returns jsonb
 language plpgsql
@@ -51,11 +59,10 @@ begin
     raise exception 'datos.run_query: no se permiten multiples sentencias (;)';
   end if;
 
-  -- Baja de privilegios: a partir de aquí el SQL corre como datos_ro,
-  -- que no puede leer public/auth. Todo scoped a la transacción (SET LOCAL).
-  set local role datos_ro;
+  -- La baja de privilegios la da el OWNER de la función (datos_ro, security
+  -- definer): el SQL de abajo no puede leer public/auth por privilegios.
+  -- (Postgres prohíbe SET ROLE dentro de security definer; por eso owner.)
   set local statement_timeout = '5000';
-  set local default_transaction_read_only = on;
 
   execute format(
     'select coalesce(jsonb_agg(t), ''[]''::jsonb) '
@@ -66,6 +73,11 @@ begin
   return result;
 end;
 $$;
+
+-- Transferir el owner: el SQL dinámico pasa a correr con los privilegios de
+-- datos_ro. Después, datos_ro vuelve a ser solo-lectura (sin CREATE).
+alter function datos.run_query(text) owner to datos_ro;
+revoke create on schema datos from datos_ro;
 
 revoke all on function datos.run_query(text) from public;
 grant execute on function datos.run_query(text) to service_role;
