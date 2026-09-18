@@ -4,11 +4,17 @@
 // comentarios de negocio que en Clavis (perímetros de cuota, huecos, canales),
 // porque son lo que evita respuestas plausibles pero falsas.
 //
+// MULTIUSUARIO (2026-09-18): el esquema se monta POR USUARIO con solo las
+// tablas que le concede datos.acl — un usuario sin permiso sobre una tabla ni
+// siquiera sabe que existe. La vista ventas_pais solo se enseña si el usuario
+// puede ver sus dos tablas base (venta_terceros + venta_sociedad).
+//
 // La cobertura temporal (dim_cobertura) se añade en tiempo de ejecución (qa.ts)
 // con una consulta, para que refleje siempre hasta dónde llega cada serie.
 // =====================================================
 
-export const ESQUEMA_DATOS = `TABLA mercado_intl
+export const TABLAS_ESQUEMA: Record<string, string> = {
+  mercado_intl: `TABLA mercado_intl
   -- Exportacion mensual por pais y fuente, en euros y metros cuadrados.
   -- fuente='Ascer' = exportacion TOTAL del sector ceramico espanol (incluye a
   -- Porcelanosa dentro); 'Confindustria' = sector ceramico italiano (competidor);
@@ -27,9 +33,9 @@ export const ESQUEMA_DATOS = `TABLA mercado_intl
     mes_num integer
     mt2 numeric
     eur numeric
-    periodo integer
+    periodo integer`,
 
-TABLA mercado_provincial
+  mercado_provincial: `TABLA mercado_provincial
   -- Venta ANUAL por provincia espanola (Ascer = sector, Porcelanosa = propia).
   -- No tiene detalle mensual.
     fuente text
@@ -39,9 +45,9 @@ TABLA mercado_provincial
     comunidad text
     anio integer
     mt2 numeric
-    eur numeric
+    eur numeric`,
 
-TABLA espana_provincial
+  espana_provincial: `TABLA espana_provincial
   -- Mercado nacional ESPANOL por provincia y ano (52 provincias x 2022-2026),
   -- con Ascer y Porcelanosa en columnas paralelas (cuota provincial directa).
   -- Solo dato ANUAL: no hay mes, no calcular YTD. HUECOS reales (son 'sin dato',
@@ -54,9 +60,9 @@ TABLA espana_provincial
     ascer_mt2 numeric
     ascer_eur numeric
     porcelanosa_mt2 numeric
-    porcelanosa_eur numeric
+    porcelanosa_eur numeric`,
 
-TABLA proveedores
+  proveedores: `TABLA proveedores
   -- COMPRAS a proveedores por acreedor, ramo y mes (2017 en adelante). Es gasto,
   -- NO venta: nunca sumar con las tablas de venta. Sin pais ni marca.
     acreedor bigint
@@ -66,9 +72,9 @@ TABLA proveedores
     mes_num integer
     mes text
     valor_eur numeric
-    periodo integer
+    periodo integer`,
 
-TABLA venta_sociedad
+  venta_sociedad: `TABLA venta_sociedad
   -- Venta propia por filial, organizacion, oficina y marca. ATENCION:
   -- pais_filial es el domicilio de la filial, NO el destino de la venta.
   -- marca solo tiene Porcelanosa, Xlight y Xtone (centro de beneficio).
@@ -83,9 +89,9 @@ TABLA venta_sociedad
     mes_num integer
     mt2 numeric
     eur numeric
-    periodo integer
+    periodo integer`,
 
-TABLA venta_terceros
+  venta_terceros: `TABLA venta_terceros
   -- Exportacion a clientes terceros por pais y cliente (2022 en adelante).
   -- Excluye Espana. 'cliente' es nombre real. Sirve para rankings y cartera.
     sociedad text
@@ -97,23 +103,24 @@ TABLA venta_terceros
     mes_num integer
     eur numeric
     mt2 numeric
-    periodo integer
+    periodo integer`,
 
-TABLA dim_cobertura
+  dim_cobertura: `TABLA dim_cobertura
   -- Hasta que periodo (AAAAMM) llega cada serie. Consultar antes de comparar
   -- acumulados entre fuentes distintas.
     tabla text
     fuente text
     periodo_min integer
     periodo_max integer
-    filas integer
+    filas integer`,
 
-TABLA dim_pais
+  dim_pais: `TABLA dim_pais
   -- Nombre canonico de cada pais (pais_norm -> pais_display).
     pais_norm text
-    pais_display text
+    pais_display text`,
+};
 
-VISTA ventas_pais
+const VISTA_VENTAS_PAIS = `VISTA ventas_pais
   -- ⭐ USA ESTA VISTA para "cuanto vendimos en <pais>". Une los DOS canales:
   -- exportacion directa a terceros + venta de filiales propias. Da SIEMPRE el
   -- TOTAL y el desglose por canal (columna canal = 'Exportacion directa' |
@@ -128,3 +135,28 @@ VISTA ventas_pais
     canal text
     eur numeric
     mt2 numeric`;
+
+/** Nombres consultables si el usuario tiene esas tablas concedidas. */
+export function tablasConsultables(concedidas: string[]): string[] {
+  const set = new Set(concedidas.filter((t) => t in TABLAS_ESQUEMA));
+  const out = [...set];
+  if (set.has('venta_terceros') && set.has('venta_sociedad')) {
+    out.push('ventas_pais');
+  }
+  return out;
+}
+
+/** Monta el texto de esquema para el LLM con SOLO las tablas concedidas. */
+export function esquemaParaTablas(concedidas: string[]): string {
+  const set = new Set(concedidas);
+  const partes = Object.entries(TABLAS_ESQUEMA)
+    .filter(([nombre]) => set.has(nombre))
+    .map(([, texto]) => texto);
+  if (set.has('venta_terceros') && set.has('venta_sociedad')) {
+    partes.push(VISTA_VENTAS_PAIS);
+  }
+  return partes.join('\n\n');
+}
+
+/** Esquema completo (todas las tablas): para el admin y usos internos. */
+export const ESQUEMA_DATOS = esquemaParaTablas(Object.keys(TABLAS_ESQUEMA));

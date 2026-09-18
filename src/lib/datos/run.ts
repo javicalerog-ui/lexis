@@ -5,9 +5,13 @@
 // =====================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { validarSql, SqlNoPermitido } from './validar-sql';
+import { validarSql, validarTablasPermitidas, SqlNoPermitido } from './validar-sql';
+import { TABLAS_ESQUEMA } from './schema-prompt';
 
 const MAX_FILAS = 200;
+
+// Catálogo completo de nombres consultables (para la cinta de permisos).
+const CATALOGO = [...Object.keys(TABLAS_ESQUEMA), 'ventas_pais'];
 
 export type FilaDatos = Record<string, unknown>;
 
@@ -18,17 +22,23 @@ export interface ResultadoDatos {
 }
 
 /**
- * Valida el SQL y lo ejecuta vía datos.run_query. `supabase` debe ser el
- * cliente service_role (la función solo la puede invocar service_role, pero al
- * ser SECURITY DEFINER corre como datos_ro: el aislamiento se mantiene).
+ * Valida el SQL y lo ejecuta vía datos.run_query COMO un usuario concreto.
+ * `supabase` debe ser el cliente service_role (solo él puede invocar la
+ * función; al ser SECURITY DEFINER corre como datos_ro y la RLS por usuario
+ * — GUC lexis.datos_user ← userId — decide qué tablas ve).
+ * `tablasPermitidas`: las concedidas en datos.acl (cinta 1b, error claro
+ * antes de llegar a la base).
  */
 export async function ejecutarSqlDatos(
   supabase: SupabaseClient,
-  sql: string
+  sql: string,
+  userId: string,
+  tablasPermitidas: string[]
 ): Promise<ResultadoDatos> {
   let limpio: string;
   try {
     limpio = validarSql(sql);
+    validarTablasPermitidas(limpio, tablasPermitidas, CATALOGO);
   } catch (e) {
     const msg = e instanceof SqlNoPermitido ? e.message : String(e);
     return { ok: false, rows: [], error: msg };
@@ -36,7 +46,7 @@ export async function ejecutarSqlDatos(
 
   const { data, error } = await supabase
     .schema('datos')
-    .rpc('run_query', { p_sql: limpio });
+    .rpc('run_query', { p_sql: limpio, p_user: userId });
 
   if (error) {
     return { ok: false, rows: [], error: error.message };

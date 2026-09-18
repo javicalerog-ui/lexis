@@ -49,3 +49,26 @@ export function validarSql(sql: string): string {
 
   return limpio;
 }
+
+/**
+ * Cinta 1b (multiusuario): rechaza el SQL si nombra una tabla del catálogo que
+ * el usuario NO tiene concedida. No intenta parsear SQL — busca los nombres
+ * conocidos como identificadores. La garantía dura es la RLS de la base
+ * (una tabla vetada devuelve cero filas aunque esto se colara); esta cinta
+ * existe para cortar antes y con un error claro.
+ */
+export function validarTablasPermitidas(
+  sql: string,
+  permitidas: string[],
+  catalogo: string[]
+): void {
+  const ok = new Set(permitidas.map((t) => t.toLowerCase()));
+  for (const tabla of catalogo) {
+    const nombre = tabla.toLowerCase();
+    if (ok.has(nombre)) continue;
+    const patron = new RegExp(`\\b${nombre}\\b`, 'i');
+    if (patron.test(sql)) {
+      throw new SqlNoPermitido(`Sin permiso sobre la tabla: ${tabla}`);
+    }
+  }
+}

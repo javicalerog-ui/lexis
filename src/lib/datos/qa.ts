@@ -6,7 +6,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { chat } from '@/lib/llm/escalation';
-import { ESQUEMA_DATOS } from './schema-prompt';
+import { esquemaParaTablas, tablasConsultables } from './schema-prompt';
 import { ejecutarSqlDatos, formatearResultado } from './run';
 
 export interface TurnoChat {
@@ -124,10 +124,19 @@ function hoyMadrid(): { fecha: string; anio: number } {
   return { fecha: `${get('day')}/${get('month')}/${get('year')}`, anio };
 }
 
-async function coberturaTexto(supabase: SupabaseClient): Promise<string> {
+async function coberturaTexto(
+  supabase: SupabaseClient,
+  userId: string,
+  permitidas: string[]
+): Promise<string> {
+  if (!permitidas.includes('dim_cobertura')) return '';
+  // La RLS de dim_cobertura ya filtra fila a fila: cada usuario ve la
+  // cobertura solo de SUS tablas.
   const r = await ejecutarSqlDatos(
     supabase,
-    'select tabla, fuente, periodo_min, periodo_max from dim_cobertura order by tabla, fuente'
+    'select tabla, fuente, periodo_min, periodo_max from dim_cobertura order by tabla, fuente',
+    userId,
+    permitidas
   );
   if (!r.ok || !r.rows.length) return '';
   const lineas = r.rows.map((row) => {
@@ -140,15 +149,38 @@ async function coberturaTexto(supabase: SupabaseClient): Promise<string> {
 /**
  * Devuelve la respuesta redactada, o null si no aplica (para que el chat siga
  * su curso normal). Nunca lanza.
+ *
+ * `userId`: el usuario autenticado. Su ACL (datos.acl) decide qué tablas ve:
+ * el esquema del LLM se monta solo con las suyas y la RLS de la base remata.
+ * Sin tablas concedidas → null (el chat cae a su memoria personal).
  */
 export async function responderPreguntaDatos(
   supabase: SupabaseClient,
   pregunta: string,
-  historial?: TurnoChat[]
+  historial: TurnoChat[] | undefined,
+  userId: string
 ): Promise<string | null> {
-  let esquema = ESQUEMA_DATOS;
+  // 0) ¿Qué tablas tiene concedidas este usuario?
+  let concedidas: string[] = [];
   try {
-    esquema += await coberturaTexto(supabase);
+    const { data, error } = await supabase
+      .schema('datos')
+      .from('acl')
+      .select('tabla')
+      .eq('user_id', userId);
+    if (error) return null;
+    concedidas = (data ?? []).map((r: { tabla: string }) => r.tabla);
+  } catch {
+    return null;
+  }
+  if (!concedidas.length) return null;
+
+  const permitidas = tablasConsultables(concedidas);
+
+  let esquema = esquemaParaTablas(concedidas);
+  if (!esquema.trim()) return null;
+  try {
+    esquema += await coberturaTexto(supabase, userId, permitidas);
   } catch {
     // sin cobertura live, seguimos con el esquema estático
   }
@@ -175,7 +207,7 @@ export async function responderPreguntaDatos(
     return null;
   }
 
-  const res = await ejecutarSqlDatos(supabase, sql);
+  const res = await ejecutarSqlDatos(supabase, sql, userId, permitidas);
   if (!res.ok) {
     return (
       'No he podido calcular eso con los datos que tengo cargados. ' +
@@ -185,7 +217,10 @@ export async function responderPreguntaDatos(
 
   const tabla = formatearResultado(res.rows);
   try {
-    const redac = await chat(`${conContexto(pregunta, historial)}\n\nRESULTADOS:\n${tabla}`, {
+    // La fecha también al redactor: sin ella llamaba "año en curso" a 2025.
+    const redac = await chat(
+      `HOY ES ${fecha} (año en curso: ${anio}).\n\n${conContexto(pregunta, historial)}\n\nRESULTADOS:\n${tabla}`,
+      {
       system: RESPUESTA_PROMPT,
       tier: 'fast',
       temperature: 0,

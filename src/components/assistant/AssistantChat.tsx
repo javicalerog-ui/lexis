@@ -82,6 +82,12 @@ export function AssistantChat() {
   }
 
   async function salir() {
+    // Un toque accidental no debe cerrar la sesión: volver a entrar exige
+    // contraseña y ese roce es lo que mata el uso diario.
+    const seguro = window.confirm(
+      '¿Seguro que quieres salir? Para volver a entrar necesitarás la contraseña.'
+    );
+    if (!seguro) return;
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = '/auth/login';

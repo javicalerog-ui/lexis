@@ -85,7 +85,8 @@ export async function POST(req: Request) {
       const answer = await responderPreguntaDatos(
         svc,
         body.pregunta,
-        body.historial as TurnoChat[] | undefined
+        body.historial as TurnoChat[] | undefined,
+        user.id
       );
       if (answer !== null) {
         payload = { answer, kind: 'datos' };
