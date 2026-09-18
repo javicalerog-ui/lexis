@@ -9,34 +9,163 @@
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
+interface Fuente {
+  n: number;
+  summary: string;
+  source_type: string;
+  captured_at: string;
+}
+
 interface Msg {
   role: 'user' | 'assistant';
   content: string;
+  sources?: Fuente[];
 }
 
 const SALUDO =
   'Hola. Puedes preguntarme por las ventas, la cuota frente al sector, los precios medios, las compras a proveedores… o pedirme que recuerde algo. ¿Qué necesitas?';
 
-// Render mínimo y seguro de markdown ligero (negritas y saltos), sin HTML crudo.
+// Negritas dentro de una línea (sin HTML crudo).
+function negritas(linea: string) {
+  return linea.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
+    p.startsWith('**') && p.endsWith('**') ? (
+      <strong key={j}>{p.slice(2, -2)}</strong>
+    ) : (
+      <span key={j}>{p}</span>
+    )
+  );
+}
+
+const esFilaTabla = (l: string) => /^\s*\|.*\|\s*$/.test(l);
+// Fila separadora de markdown: | :--- | --- |  → no se pinta.
+const esSeparador = (l: string) => /^\s*\|[\s:|-]+\|\s*$/.test(l);
+const celdas = (l: string) =>
+  l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+
+// Render mínimo y seguro de markdown ligero: negritas, saltos y TABLAS
+// (el modelo las usa en "Datos clave"; sin esto salían los | :--- | en crudo).
 function Formateado({ texto }: { texto: string }) {
   const lineas = texto.split('\n');
-  return (
-    <>
-      {lineas.map((linea, i) => {
-        const partes = linea.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
-          p.startsWith('**') && p.endsWith('**') ? (
-            <strong key={j}>{p.slice(2, -2)}</strong>
-          ) : (
-            <span key={j}>{p}</span>
-          )
-        );
-        return (
-          <div key={i} style={{ minHeight: linea ? undefined : 8 }}>
-            {partes}
+  const bloques: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lineas.length) {
+    if (esFilaTabla(lineas[i])) {
+      const filas: string[] = [];
+      while (i < lineas.length && esFilaTabla(lineas[i])) {
+        if (!esSeparador(lineas[i])) filas.push(lineas[i]);
+        i++;
+      }
+      if (filas.length) {
+        const [cab, ...cuerpo] = filas.map(celdas);
+        bloques.push(
+          <div key={`t${i}`} style={{ overflowX: 'auto', margin: '8px 0' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 15.5 }}>
+              <thead>
+                <tr>
+                  {cab.map((c, j) => (
+                    <th
+                      key={j}
+                      style={{
+                        textAlign: j === 0 ? 'left' : 'right',
+                        padding: '6px 10px',
+                        borderBottom: '1px solid var(--line-strong)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {negritas(c)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cuerpo.map((fila, k) => (
+                  <tr key={k}>
+                    {fila.map((c, j) => (
+                      <td
+                        key={j}
+                        style={{
+                          textAlign: j === 0 ? 'left' : 'right',
+                          padding: '6px 10px',
+                          borderBottom: '1px solid var(--line)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {negritas(c)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         );
-      })}
-    </>
+      }
+      continue;
+    }
+
+    const linea = lineas[i];
+    bloques.push(
+      <div key={`l${i}`} style={{ minHeight: linea ? undefined : 8 }}>
+        {negritas(linea)}
+      </div>
+    );
+    i++;
+  }
+
+  return <>{bloques}</>;
+}
+
+// Las notas en las que se apoya la respuesta. Sin esto, las citas [1] del
+// texto no apuntan a nada visible (Silvestre no tiene otra pantalla).
+function Fuentes({ fuentes }: { fuentes: Fuente[] }) {
+  const [abierto, setAbierto] = useState(false);
+  if (!fuentes.length) return null;
+  return (
+    <div style={{ marginTop: 12, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+      <button
+        onClick={() => setAbierto((v) => !v)}
+        style={{
+          fontSize: 14,
+          color: 'var(--fg-2)',
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+        }}
+      >
+        {abierto ? '▾' : '▸'} Basado en {fuentes.length} nota
+        {fuentes.length > 1 ? 's' : ''} tuya{fuentes.length > 1 ? 's' : ''}
+      </button>
+      {abierto && (
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {fuentes.map((f) => (
+            <div
+              key={f.n}
+              style={{
+                fontSize: 14.5,
+                lineHeight: 1.45,
+                color: 'var(--fg-1)',
+                background: 'var(--bg-1)',
+                border: '1px solid var(--line)',
+                borderRadius: 10,
+                padding: '8px 10px',
+              }}
+            >
+              <span style={{ color: 'var(--fg-2)', marginRight: 6 }}>[{f.n}]</span>
+              {f.summary}
+              <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4 }}>
+                {new Date(f.captured_at).toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -70,7 +199,8 @@ export function AssistantChat() {
       const answer =
         (res.ok && typeof data.answer === 'string' && data.answer) ||
         'No he podido responder a eso ahora mismo. ¿Lo intentamos de otra forma?';
-      setMessages((prev) => [...prev, { role: 'assistant', content: answer }]);
+      const sources = Array.isArray(data.sources) ? (data.sources as Fuente[]) : undefined;
+      setMessages((prev) => [...prev, { role: 'assistant', content: answer, sources }]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -160,7 +290,14 @@ export function AssistantChat() {
                 wordBreak: 'break-word',
               }}
             >
-              {m.role === 'assistant' ? <Formateado texto={m.content} /> : m.content}
+              {m.role === 'assistant' ? (
+                <>
+                  <Formateado texto={m.content} />
+                  {m.sources && m.sources.length > 0 && <Fuentes fuentes={m.sources} />}
+                </>
+              ) : (
+                m.content
+              )}
             </div>
           ))}
           {busy && (

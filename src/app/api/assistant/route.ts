@@ -78,7 +78,15 @@ export async function POST(req: Request) {
   }
 
   // 2) ¿Es una pregunta de datos de negocio? (solo para quien tiene acceso)
-  let payload: { answer: string; kind: string; grounded?: boolean } | null = null;
+  interface Fuente {
+    n: number;
+    summary: string;
+    source_type: string;
+    captured_at: string;
+  }
+  let payload:
+    | { answer: string; kind: string; grounded?: boolean; sources?: Fuente[] }
+    | null = null;
   if (datosAllowed) {
     try {
       const svc = createServiceClient();
@@ -100,7 +108,21 @@ export async function POST(req: Request) {
   if (!payload) {
     try {
       const res = await synthesizeAnswer(supabase, user.id, body.pregunta);
-      payload = { answer: res.answer_md, kind: 'memoria', grounded: res.grounded };
+      // Las FUENTES viajan al chat: sin ellas las citas [1] de la respuesta
+      // apuntan a la nada (en modo Silvestre no hay otra pantalla donde verlas).
+      payload = {
+        answer: res.answer_md,
+        kind: 'memoria',
+        grounded: res.grounded,
+        // La numeración debe seguir el orden con que se citaron ([1], [2]...),
+        // así que no se filtra ninguna: las sin resumen llevan texto de relleno.
+        sources: res.sources.map((s, i) => ({
+          n: i + 1,
+          summary: s.summary ?? '(nota sin resumen)',
+          source_type: s.source_type,
+          captured_at: s.captured_at,
+        })),
+      };
     } catch (e) {
       await captura; // la captura del turno no se pierde aunque falle la respuesta
       return NextResponse.json(
