@@ -118,6 +118,30 @@ export const TABLAS_ESQUEMA: Record<string, string> = {
   -- Nombre canonico de cada pais (pais_norm -> pais_display).
     pais_norm text
     pais_display text`,
+
+  hpe_propuestas: `TABLA hpe_propuestas
+  -- Resumen editorial de propuestas hoteleras (Hotel Proposal Engine). Una fila
+  -- por proyecto. NUNCA hay cifras de coste/margen/viabilidad interna en esta
+  -- tabla (norma comercial: a JM solo estado + accion, nunca numeros crudos).
+  -- ventana_prescripcion='ABIERTA' es la senal mas accionable: significa que
+  -- es el momento de prescribir materiales AHORA. proxima_accion es el
+  -- siguiente paso sugerido (confirmar con quien, que falta, etc).
+    propuesta_id text
+    nombre text
+    ubicacion text
+    pais text
+    categoria_estrellas integer
+    tipologia text
+    llaves integer
+    estado text
+    apertura text
+    fase_obra text
+    ventana_prescripcion text
+    prioridad text
+    proxima_accion text
+    marca_lider text
+    marcas_complementarias text
+    fuente text`,
 };
 
 const VISTA_VENTAS_PAIS = `VISTA ventas_pais
