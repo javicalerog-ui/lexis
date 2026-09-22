@@ -45,6 +45,7 @@ const GROUPS: Array<{ title: string | null; items: Item[] }> = [
     title: 'Ajustes',
     items: [
       { href: '/digest', label: 'Resumen periódico', icon: '✉' },
+      { href: '/settings/notifications', label: 'Notificaciones', icon: '⏲' },
       { href: '/settings/password', label: 'Contraseña', icon: '⚿' },
     ],
   },
