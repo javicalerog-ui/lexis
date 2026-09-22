@@ -138,82 +138,95 @@ export function NavDrawer({ onLogout }: { onLogout: () => void }) {
               width: 284,
               maxWidth: '82vw',
               height: '100dvh',
-              overflowY: 'auto',
               background: 'var(--bg-2)',
               borderRight: '1px solid var(--line)',
               boxShadow: 'var(--shadow-lg)',
-              padding: 10,
               display: 'flex',
               flexDirection: 'column',
             }}
           >
+            {/* Región con scroll propio: solo esto se desplaza. El botón de
+                salir vive FUERA, como pie fijo — antes estaba pegado abajo
+                con un spacer flex:1 dentro del propio contenedor con scroll,
+                y en iPhone (barra de Safari tapando parte de la pantalla)
+                quedaba inalcanzable: al no haber overflow real que desplazar
+                (el spacer ocupa exactamente el hueco sobrante), no había nada
+                que hacer scroll y el botón quedaba fuera de la vista. */}
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '8px 10px 10px',
-                borderBottom: '1px solid var(--line)',
-                marginBottom: 6,
+                flex: '1 1 auto',
+                minHeight: 0,
+                overflowY: 'auto',
+                padding: 10,
               }}
             >
-              <span
+              <div
                 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 15,
-                  fontWeight: 500,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: 'var(--fg-0)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px 10px',
+                  borderBottom: '1px solid var(--line)',
+                  marginBottom: 6,
                 }}
               >
-                Lexis
-              </span>
-              <button
-                aria-label="Cerrar menú"
-                onClick={() => setOpen(false)}
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: 'var(--r-full)',
-                  color: 'var(--fg-2)',
-                  fontSize: 16,
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                ✕
-              </button>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 15,
+                    fontWeight: 500,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'var(--fg-0)',
+                  }}
+                >
+                  Lexis
+                </span>
+                <button
+                  aria-label="Cerrar menú"
+                  onClick={() => setOpen(false)}
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 'var(--r-full)',
+                    color: 'var(--fg-2)',
+                    fontSize: 16,
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {GROUPS.map((g, gi) => (
+                <div key={gi}>
+                  {g.title && <p style={groupTitleStyle}>{g.title}</p>}
+                  {g.items.map((it) => (
+                    <Link
+                      key={it.href}
+                      href={it.href}
+                      onClick={() => setOpen(false)}
+                      style={rowStyle}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background = 'var(--card-hover)')
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = 'transparent')
+                      }
+                    >
+                      <span style={iconStyle} aria-hidden>
+                        {it.icon}
+                      </span>
+                      {it.label}
+                    </Link>
+                  ))}
+                </div>
+              ))}
             </div>
 
-            {GROUPS.map((g, gi) => (
-              <div key={gi}>
-                {g.title && <p style={groupTitleStyle}>{g.title}</p>}
-                {g.items.map((it) => (
-                  <Link
-                    key={it.href}
-                    href={it.href}
-                    onClick={() => setOpen(false)}
-                    style={rowStyle}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = 'var(--card-hover)')
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = 'transparent')
-                    }
-                  >
-                    <span style={iconStyle} aria-hidden>
-                      {it.icon}
-                    </span>
-                    {it.label}
-                  </Link>
-                ))}
-              </div>
-            ))}
-
-            <div style={{ flex: 1 }} />
-
+            {/* Pie fijo — nunca depende de scroll ni de cuánto mida el resto. */}
             <button
               onClick={() => {
                 setOpen(false);
@@ -221,16 +234,17 @@ export function NavDrawer({ onLogout }: { onLogout: () => void }) {
               }}
               style={{
                 ...rowStyle,
+                flexShrink: 0,
                 color: 'var(--danger)',
-                background: 'transparent',
+                background: 'var(--bg-2)',
                 border: 'none',
                 cursor: 'pointer',
                 width: '100%',
                 textAlign: 'left',
-                marginTop: 8,
                 borderTop: '1px solid var(--line)',
                 borderRadius: 0,
-                paddingTop: 14,
+                padding: '14px 10px',
+                paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
               }}
             >
               <span style={{ ...iconStyle, color: 'var(--danger)' }} aria-hidden>
