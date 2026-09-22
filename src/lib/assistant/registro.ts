@@ -117,7 +117,15 @@ export function confirmacionRegistro(result: IngestionResult): string {
 
   const proyectos = (result.attached_projects || []).map((p) => p.name).filter(Boolean);
   const entidades = (result.attached_entities || []).map((e) => e.name).filter(Boolean);
-  const etiquetas = [...proyectos, ...entidades];
+  // Dedupe: un mismo nombre (p.ej. "Lexis") puede venir como proyecto Y como
+  // entidad a la vez — sin esto salía repetido en la confirmación.
+  const vistos = new Set<string>();
+  const etiquetas = [...proyectos, ...entidades].filter((nombre) => {
+    const clave = nombre.toLowerCase();
+    if (vistos.has(clave)) return false;
+    vistos.add(clave);
+    return true;
+  });
   if (etiquetas.length > 0) {
     partes.push(`Lo he relacionado con: ${etiquetas.join(', ')}.`);
   }
