@@ -13,6 +13,7 @@
 // =====================================================
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
 interface Item {
@@ -118,7 +119,7 @@ export function NavDrawer({ onLogout }: { onLogout: () => void }) {
         ☰
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           onClick={() => setOpen(false)}
           style={{
@@ -258,7 +259,15 @@ export function NavDrawer({ onLogout }: { onLogout: () => void }) {
               Cerrar sesión
             </button>
           </nav>
-        </div>
+        </div>,
+        document.body
+        // Portal a document.body: el header (position:sticky + z-index) crea
+        // su propio contexto de apilamiento y atrapaba el menú (z-index:100)
+        // DENTRO de ese contexto — desde fuera, todo el header "vale" 50, y
+        // el compositor del chat (mas abajo en el DOM, mismo z-index) le
+        // ganaba el empate y se pintaba encima. El portal saca el menú del
+        // arbol y lo compara en la capa raiz de verdad, sin depender de
+        // donde esté anidado el botón que lo abre.
       )}
     </>
   );
