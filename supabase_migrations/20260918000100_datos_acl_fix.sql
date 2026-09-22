@@ -108,8 +108,22 @@ begin
     p_tabla, p_tabla
   );
   execute format('grant select on datos.%I to datos_ro', p_tabla);
-  return 'OK: tabla ' || p_tabla || ' registrada en el motor (sin permisos aún)';
+  -- BUG corregido 2026-09-22: faltaba este grant. Sin él, el cargador (que
+  -- corre como service_role) recibía 403 al insertar en cualquier tabla dada
+  -- de alta DESPUÉS de la migración original (esa sí traía el grant a mano,
+  -- pero no es un default-privileges — no se hereda por tablas nuevas).
+  execute format(
+    'grant select, insert, update, delete, truncate on datos.%I to service_role',
+    p_tabla
+  );
+  return 'OK: tabla ' || p_tabla || ' registrada en el motor (sin permisos de consulta aún)';
 end $$;
+
+-- Además: cualquier tabla creada en `datos` a partir de ahora por CREATE TABLE
+-- directo (sin pasar por registrar_tabla) también recibe el grant solo, para
+-- que este bug no pueda repetirse por otra vía.
+alter default privileges in schema datos
+  grant select, insert, update, delete, truncate on tables to service_role;
 
 revoke all on function datos.registrar_tabla(text) from public;
 grant execute on function datos.registrar_tabla(text) to service_role;
