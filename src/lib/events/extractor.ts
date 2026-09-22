@@ -147,7 +147,10 @@ Devuelve JSON estricto.`;
     const result = await chatWithEscalation<ExtractorOutput>(prompt, {
       system: SYSTEM_PROMPT,
       temperature: 0.1,
-      max_tokens: 1200,
+      // Holgado: razonamiento obligatorio comparte presupuesto con la salida;
+      // con 1200 podía cortarse y perder recordatorios en silencio (degrada
+      // a 'llm_failed', no rompe la captura, pero sí pierde el evento).
+      max_tokens: 1800,
       confidence_field: 'confidence' as keyof ExtractorOutput,
     });
     parsed = result.parsed;

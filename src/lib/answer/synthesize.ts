@@ -160,7 +160,10 @@ export async function synthesizeAnswer(
   const resp = await chat(buildUserPrompt(query, memories), {
     system: ANSWER_SYSTEM,
     temperature: 0.3,
-    max_tokens: 900,
+    // Holgado: el modelo razona de forma obligatoria (~400-800 tokens) del
+    // mismo presupuesto que la respuesta; con 900 el texto podía salir vacío
+    // y el propio código lo trataba como fallo (ver comentario debajo).
+    max_tokens: 1800,
     tier: 'fast',
   });
 

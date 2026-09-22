@@ -104,7 +104,12 @@ Decide.`;
   }>(userPrompt, {
     system: CLASSIFIER_PROMPT,
     temperature: 0.1,
-    max_tokens: 400,
+    // Holgado: razonamiento obligatorio del modelo comparte presupuesto con
+    // la salida; con 400 el JSON salía cortado y chatWithEscalation lanzaba
+    // ('LLM no devolvió JSON parseable') — eso rompía TODA la captura-todo,
+    // no solo la clasificación (ver route.ts: capturarTurno propaga el fallo
+    // como "no he podido guardarlo").
+    max_tokens: 1200,
     confidence_field: 'confidence',
   });
 
