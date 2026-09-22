@@ -13,3 +13,12 @@ jobs:
         run: |
           curl -sf -X GET "https://lexis-jade.vercel.app/api/cron/reminders" \
             -H "Authorization: Bearer ${{ secrets.LEXIS_CRON_SECRET }}"
+      # proactive_rules (revisiones semanales/mensuales, follow-ups, reuniones)
+      # llevaba huerfano desde el Sprint 17: nada lo llamaba nunca (el Worker
+      # de Cloudflare solo pinga /api/cron/reminders). Mismo secreto, mismo
+      # latido - así las reglas custom (revisión semanal HPE, recarga mensual
+      # de Silvestre) por fin tienen quien las dispare.
+      - name: Call /api/cron/proactive
+        run: |
+          curl -sf -X GET "https://lexis-jade.vercel.app/api/cron/proactive" \
+            -H "Authorization: Bearer ${{ secrets.LEXIS_CRON_SECRET }}"
