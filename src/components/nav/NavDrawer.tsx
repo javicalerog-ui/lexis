@@ -130,6 +130,11 @@ export function NavDrawer({ onLogout }: { onLogout: () => void }) {
             zIndex: 'var(--z-modal)' as unknown as number,
             display: 'flex',
             justifyContent: 'flex-start',
+            // iOS Safari no siempre dispara "click" en un <div> sin
+            // cursor:pointer (solo trata como "clicable" a lo que ya parece
+            // interactivo) - sin esto, tocar fuera del menú en el iPhone no
+            // lo cerraba y solo funcionaba la X.
+            cursor: 'pointer',
           }}
         >
           <nav
