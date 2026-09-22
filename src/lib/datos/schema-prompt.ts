@@ -142,6 +142,29 @@ export const TABLAS_ESQUEMA: Record<string, string> = {
     marca_lider text
     marcas_complementarias text
     fuente text`,
+
+  gd_contactos: `TABLA gd_contactos
+  -- Contactos B2B reales de Global Database para prospeccion comercial.
+  -- Nombre+cargo+empresa+email de trabajo DIRECTO (no generico de empresa).
+  -- Son PERSONAS reales: usalos para "quien contacto en <pais/sector>", NO
+  -- para volcar listas completas sin criterio. Si email_directo esta vacio,
+  -- di que no hay email para ese contacto - no inventes uno.
+    empresa text
+    pais text
+    ciudad text
+    industria text
+    sic_code text
+    sic_actividad text
+    web text
+    nombre text
+    apellido text
+    seniority text
+    departamento text
+    cargo text
+    linkedin_persona text
+    telefono_directo text
+    email_directo text
+    fuente_fichero text`,
 };
 
 const VISTA_VENTAS_PAIS = `VISTA ventas_pais
