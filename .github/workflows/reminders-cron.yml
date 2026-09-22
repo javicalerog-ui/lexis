@@ -1,0 +1,15 @@
+name: Lexis reminders cron
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/cron/reminders
+        run: |
+          curl -sf -X GET "https://lexis-jade.vercel.app/api/cron/reminders" \
+            -H "Authorization: Bearer ${{ secrets.LEXIS_CRON_SECRET }}"
