@@ -1,0 +1,14 @@
+{
+  "name": "lexis-heartbeat",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  // Cada 5 minutos. Cloudflare respeta el cron al minuto (a diferencia de
+  // GitHub Actions). Los recordatorios tienen ventana de gracia de 2h, asi
+  // que 5 min es de sobra para que suenen puntuales.
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}
