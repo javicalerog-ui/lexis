@@ -283,6 +283,11 @@ async function executePushFollowupCheck(ctx: ExecuteContext): Promise<ExecutionR
     .eq('user_id', ctx.userId)
     .eq('status', 'pending')
     .eq('type', 'follow_up')
+    // Solo los follow_up SIN hora concreta (aviso del día). Los que traen hora
+    // (all_day=false) los dispara /api/cron/reminders a su hora exacta.
+    .eq('all_day', true)
+    // No re-avisar si ya se notificó (aquí o por el cron de reminders).
+    .is('notified_at', null)
     .gte('due_at', inDayStart.toISOString())
     .lte('due_at', inDayEnd.toISOString());
 
@@ -321,6 +326,13 @@ async function executePushFollowupCheck(ctx: ExecuteContext): Promise<ExecutionR
       },
       { type_key: 'follow_ups' }
     );
+
+    // Marcamos el evento como notificado: un follow_up recibe UN aviso del día,
+    // no uno por cada tick del cron proactivo.
+    await ctx.supabase
+      .from('events')
+      .update({ notified_at: new Date().toISOString() })
+      .eq('id', ev.id);
 
     results.push({ event_id: ev.id, aa_id: aaId, push });
   }

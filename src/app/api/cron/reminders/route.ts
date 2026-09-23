@@ -28,9 +28,11 @@ export const maxDuration = 60;
 const GRACE_MS = 2 * 60 * 60_000; // 2 h
 
 // Tipos que se notifican "a su hora". `reminder` = "recuérdame X"; `deadline`
-// = "antes del viernes". Meetings y follow_ups tienen su propia lógica de
-// pre-aviso en /api/cron/proactive, así que no se tocan aquí.
-const REMINDER_TYPES = ['reminder', 'deadline'];
+// = "antes del viernes". Los `follow_up` CON hora concreta (all_day=false)
+// también se avisan aquí, a su hora exacta; los follow_up SIN hora (all_day=true)
+// los lleva la regla proactiva commitment_followup como aviso del día, y se
+// filtran más abajo. Meetings tienen su pre-aviso propio en /api/cron/proactive.
+const REMINDER_TYPES = ['reminder', 'deadline', 'follow_up'];
 
 export async function GET(req: Request) {
   if (!isCronRequestAuthorized(req.headers)) {
@@ -43,7 +45,7 @@ export async function GET(req: Request) {
 
   const { data: due, error } = await supabase
     .from('events')
-    .select('id, user_id, title, type, due_at, linked_memory_id')
+    .select('id, user_id, title, type, all_day, due_at, linked_memory_id')
     .eq('status', 'pending')
     .is('notified_at', null)
     .in('type', REMINDER_TYPES)
@@ -59,6 +61,11 @@ export async function GET(req: Request) {
   const results: Array<Record<string, unknown>> = [];
 
   for (const ev of due ?? []) {
+    // follow_up SIN hora concreta (all_day): no lo disparamos aquí para no
+    // avisar a la hora por defecto (09:00). Lo gestiona la regla proactiva
+    // commitment_followup como "¿lo has hecho?" del día.
+    if (ev.type === 'follow_up' && ev.all_day) continue;
+
     try {
       const res = await sendPush(
         supabase,
@@ -76,7 +83,12 @@ export async function GET(req: Request) {
           // Un recordatorio a una hora que el usuario pidió EXPRESAMENTE debe
           // sonar aunque caiga en horas de silencio (p. ej. las 7:00).
           ignore_quiet_hours: true,
-          type_key: ev.type === 'deadline' ? 'deadlines' : 'reminders',
+          type_key:
+            ev.type === 'deadline'
+              ? 'deadlines'
+              : ev.type === 'follow_up'
+                ? 'follow_ups'
+                : 'reminders',
         }
       );
 
