@@ -1,0 +1,4 @@
+# El Worker de Cloudflare (latido) se despliega aparte con wrangler, no forma
+# parte del build de Next.js en Vercel. Excluirlo evita que su TypeScript
+# (tipos de Cloudflare) rompa el build de la web.
+heartbeat-worker
