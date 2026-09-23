@@ -28,9 +28,13 @@ export type Intencion = 'registro' | 'consulta';
 // --- Cinta 1: heurística barata -------------------------------------------
 
 const RX_REGISTRO = new RegExp(
-  '^\\s*(ap[uú]nta(me)?|anota(me)?|recuerda\\s+que|acu[eé]rdate\\s+de\\s+que|' +
-    'toma\\s+nota|guarda(me)?\\s|registra(me)?\\s|quiero\\s+(registrar|anotar|apuntar)|' +
-    'recu[eé]rdame\\s)',
+  '^\\s*(ap[uú]nta(me|lo)?|anota(me|lo)?|recuerda\\s+que|acu[eé]rdate\\s+de\\s+que|' +
+    'toma\\s+nota|guarda(me|lo)?\\s|registra(me|lo)?\\s|quiero\\s+(registrar|anotar|apuntar)|' +
+    // Recordatorios/alarmas: pronombre pegado ("recuérdamelo"), "avísame",
+    // "ponme un recordatorio". Cubre el caso "recuérdamelo a las 15h, ok??"
+    // que antes caía en consulta por acabar en "?".
+    'recu[eé]rda(melo|nos|los|las|me|lo|la)?\\b|av[ií]sa(me|nos)?\\b|' +
+    'p[oó]n(me)?\\s+(un|una)?\\s*(recordatorio|alarma|aviso))',
   'i'
 );
 
@@ -58,7 +62,8 @@ Reglas:
 - Cualquier pregunta (aunque no lleve "¿") es "consulta".
 - Peticiones de cifras de negocio (ventas, cuota, precios, proveedores, países) son SIEMPRE "consulta".
 - Saludos, agradecimientos o conversación social → "consulta".
-- Solo "registro" si claramente aporta información para guardar.
+- Peticiones de RECORDATORIO o ALARMA ("recuérdame…", "recuérdamelo a las 15h", "avísame cuando…", "ponme un recordatorio", "no se me olvide…"), aunque acaben en "?", son "registro". Lexis SÍ puede programar recordatorios y avisar por notificación push: nunca respondas que no puedes.
+- Solo "registro" si claramente aporta información para guardar o pide recordar/avisar algo.
 - EN CASO DE DUDA → "consulta".
 
 Responde SOLO JSON: {"intencion":"registro"} o {"intencion":"consulta"}`;
