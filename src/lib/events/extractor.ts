@@ -30,6 +30,7 @@ interface ExtractedEvent {
   type: ExtractorType;
   description?: string;
   confidence: number;                // 0-1
+  remind_before_minutes?: number;    // aviso previo (reuniones/citas); 0 = a su hora
 }
 
 interface ExtractorOutput {
@@ -71,6 +72,12 @@ Reglas de resolución de fechas relativas:
 - Si NO hay hora específica y el evento es un día → all_day: true, due_at = ese día a las 09:00 hora local.
 - Si HAY hora → all_day: false, due_at con esa hora.
 
+Aviso previo (remind_before_minutes), entero en minutos:
+- Reuniones/citas/eventos a los que el usuario ASISTE con hora concreta ("tengo una reunión a las 15:30", "cita con el médico el martes a las 10", "comida con X", "llamada a las 12", "vuelo a las 18") → remind_before_minutes: 10 (avisar 10 min antes).
+- Si el usuario pide un margen explícito ("avísame 20 min antes", "recuérdamelo media hora antes") → usa ESE valor en minutos (máximo 60).
+- Recordatorios de TAREAS que el usuario hace ("recuérdame llamar a X a las 15", "enviar email a las 12", deadlines) → remind_before_minutes: 0 (a su hora).
+- Si no aplica o dudas → 0.
+
 Política de ventana:
 - Incluye eventos en el futuro (sin límite).
 - Incluye eventos pasados solo si fueron en los últimos 7 días desde captured_at (útiles para follow-ups: "envié el lunes" → checkpoint).
@@ -86,7 +93,8 @@ Formato JSON requerido:
       "all_day": false,
       "type": "meeting",
       "description": "Hablar de avance de propuesta y siguientes pasos",
-      "confidence": 0.9
+      "confidence": 0.9,
+      "remind_before_minutes": 10
     }
   ],
   "confidence": 0.85
@@ -212,7 +220,13 @@ Devuelve JSON estricto.`;
       confidence: ev.confidence,
       metadata: {
         extracted_from: 'memory',
-        extractor_version: 'v1',
+        extractor_version: 'v2',
+        // Aviso previo en minutos (reuniones/citas). Lo lee /api/cron/reminders
+        // para disparar antes de due_at. Acotado 0..60.
+        remind_before_minutes: Math.max(
+          0,
+          Math.min(60, Math.round(Number(ev.remind_before_minutes) || 0))
+        ),
       },
     });
 
