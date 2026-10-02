@@ -26,7 +26,10 @@ export const maxDuration = 60;
 // Solo avisamos de eventos cuya hora llegó dentro de esta ventana hacia
 // atrás. Evita vomitar recordatorios rancios (de días atrás, aún pending)
 // si el latido estuvo caído un rato; a la vez tolera retrasos del cron.
-const GRACE_MS = 2 * 60 * 60_000; // 2 h
+// 12 h (antes 2 h): el 2026-09-30 un recordatorio de las 08:00 no salió (pg_cron
+// sí latió; el fallo fue transitorio en la respuesta del endpoint) y, con 2 h,
+// un solo tropiezo lo dejaba huérfano. Mejor un aviso tarde que ninguno.
+const GRACE_MS = 12 * 60 * 60_000; // 12 h
 
 // Cuánto hacia ADELANTE miramos para poder disparar el "aviso previo" de
 // reuniones/citas (metadata.remind_before_minutes). Un evento a las 15:30 con
@@ -84,6 +87,11 @@ export async function GET(req: Request) {
       0,
       Math.min(MAX_LEAD_MIN, Number((ev.metadata as any)?.remind_before_minutes) || 0)
     );
+    // meeting SIN margen explícito: no se avisa aquí (como antes de añadir el
+    // tipo). Esas reuniones —p. ej. las sincronizadas de Google Calendar— las
+    // lleva el pre-aviso de /api/cron/proactive; avisarlas a su hora duplicaría.
+    if (ev.type === 'meeting' && leadMin === 0) continue;
+
     const dueMs = new Date(ev.due_at).getTime();
     if (now.getTime() < dueMs - leadMin * 60_000) continue;
 
