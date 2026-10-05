@@ -121,15 +121,17 @@ export async function callOpenRouter(opts: OpenRouterOptions): Promise<{
   );
 }
 
-// Model IDs vigentes en OpenRouter (verificados 2026-05). Overridables por env.
-// OJO: los slugs cambian; `google/gemini-3-flash` (sin .5) ya NO existe.
+// Model IDs vigentes en OpenRouter (verificados 2026-10-05). Overridables por env.
+// 2026-10-05: gemini-3.5-flash -> gemini-3.8-flash (-50% entrada, -58% salida) y
+// claude-sonnet-4.6 -> claude-sonnet-5.5 (-33%); misma familia, más nuevos.
+// OJO: los slugs cambian; comprobar en https://openrouter.ai/api/v1/models.
 export function modelFor(tier: LLMTier): string {
   if (tier === 'deep') {
-    return process.env.OPENROUTER_MODEL_DEEP || 'anthropic/claude-sonnet-4.6';
+    return process.env.OPENROUTER_MODEL_DEEP || 'anthropic/claude-sonnet-5.5';
   }
-  return process.env.OPENROUTER_MODEL_FAST || 'google/gemini-3.5-flash';
+  return process.env.OPENROUTER_MODEL_FAST || 'google/gemini-3.8-flash';
 }
 
 export function visionModel(): string {
-  return process.env.OPENROUTER_MODEL_VISION || 'google/gemini-3.5-flash';
+  return process.env.OPENROUTER_MODEL_VISION || 'google/gemini-3.8-flash';
 }

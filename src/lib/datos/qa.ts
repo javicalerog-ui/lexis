@@ -84,6 +84,7 @@ FORMATO NUMÉRICO (español):
 - Variaciones: +13,0 % o −8,5 % (siempre con signo). Nunca notación científica.
 
 DECIR SIEMPRE LA MODALIDAD del periodo: «en el mes», «acumulado enero-julio», «año completo» o «año en curso, con los meses disponibles». Si el año está incompleto, dilo; nunca lo presentes como cerrado.
+- ⚠️ HASTA QUÉ MES LLEGAN LOS DATOS lo dice la COBERTURA TEMPORAL que te paso (periodo AAAAMM), NUNCA la fecha de hoy. Si la serie llega a 202609, di «hasta septiembre», aunque hoy sea octubre. Sin cobertura, no digas el mes de corte.
 
 - Un hueco de datos NO es un cero: si algo no está, di «sin dato», no «0».
 - Si un denominador es cero o falta, di «no calculable», no inventes el ratio.
@@ -179,8 +180,13 @@ export async function responderPreguntaDatos(
 
   let esquema = esquemaParaTablas(concedidas);
   if (!esquema.trim()) return null;
+  // La cobertura va al SQL y TAMBIÉN al redactor: sin ella, el redactor deducía
+  // el mes de corte de la fecha de hoy («acumulado a octubre» con datos hasta
+  // septiembre, 2026-10-05).
+  let cobertura = '';
   try {
-    esquema += await coberturaTexto(supabase, userId, permitidas);
+    cobertura = await coberturaTexto(supabase, userId, permitidas);
+    esquema += cobertura;
   } catch {
     // sin cobertura live, seguimos con el esquema estático
   }
@@ -219,7 +225,7 @@ export async function responderPreguntaDatos(
   try {
     // La fecha también al redactor: sin ella llamaba "año en curso" a 2025.
     const redac = await chat(
-      `HOY ES ${fecha} (año en curso: ${anio}).\n\n${conContexto(pregunta, historial)}\n\nRESULTADOS:\n${tabla}`,
+      `HOY ES ${fecha} (año en curso: ${anio}).${cobertura}\n\n${conContexto(pregunta, historial)}\n\nRESULTADOS:\n${tabla}`,
       {
       system: RESPUESTA_PROMPT,
       tier: 'fast',
