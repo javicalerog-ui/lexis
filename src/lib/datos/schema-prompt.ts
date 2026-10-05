@@ -92,12 +92,20 @@ export const TABLAS_ESQUEMA: Record<string, string> = {
     periodo integer`,
 
   venta_terceros: `TABLA venta_terceros
-  -- Exportacion a clientes terceros por pais y cliente (2022 en adelante).
-  -- Excluye Espana. 'cliente' es nombre real. Sirve para rankings y cartera.
+  -- Venta de las organizaciones de ventas de FABRICA fuera de Espana, por pais
+  -- y cliente (2022 en adelante). 'cliente' es nombre real.
+  -- *** OJO: incluye la venta a FILIALES PROPIAS del Grupo (Porcelanosa New York,
+  -- UK, France, Mexico...), marcadas con es_filial = true. Esas NO son clientes
+  -- terceros: es mercancia que la filial revende y ya cuenta en venta_sociedad. ***
+  -- "Clientes terceros", rankings de clientes, cartera, "quien ha comprado mas":
+  -- filtra SIEMPRE WHERE NOT es_filial. Solo si preguntan expresamente por la
+  -- venta de fabrica a las filiales, usa es_filial = true.
+  -- Un nombre parecido (Porsa, Goa Invest...) NO implica filial: manda es_filial.
     sociedad text
     pais text
     pais_norm text
     cliente text
+    es_filial boolean
     anio integer
     mes text
     mes_num integer
@@ -168,11 +176,13 @@ export const TABLAS_ESQUEMA: Record<string, string> = {
 };
 
 const VISTA_VENTAS_PAIS = `VISTA ventas_pais
-  -- ⭐ USA ESTA VISTA para "cuanto vendimos en <pais>". Une los DOS canales:
-  -- exportacion directa a terceros + venta de filiales propias. Da SIEMPRE el
-  -- TOTAL y el desglose por canal (columna canal = 'Exportacion directa' |
-  -- 'Filial propia'). Ej: Francia 2025 = 20,6 + 36,4 = 56,9 MEUR. NO la uses
-  -- para cuota frente a Ascer (esa va contra mercado_intl).
+  -- ⭐ USA ESTA VISTA para "cuanto vendimos en <pais>". Une los DOS canales de
+  -- venta a CLIENTES EXTERNOS: exportacion directa a clientes terceros (ya SIN
+  -- la venta a filiales propias) + venta de las filiales a su cliente final.
+  -- Asi no se cuenta dos veces la mercancia fabrica -> filial -> cliente.
+  -- Da SIEMPRE el TOTAL y el desglose por canal (columna canal =
+  -- 'Exportacion directa' | 'Filial propia'). Ej: Francia 2025 = 0,3 + 36,4 =
+  -- 36,65 MEUR. NO la uses para cuota frente a Ascer (esa va contra mercado_intl).
     pais text
     pais_norm text
     anio integer

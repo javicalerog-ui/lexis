@@ -180,6 +180,22 @@ def tabla_sociedad(df):
     return out
 
 
+def _norm_cliente(s):
+    if s is None or (isinstance(s, float) and pd.isna(s)):
+        return ""
+    t = unicodedata.normalize("NFKD", str(s)).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def clientes_grupo():
+    """Lista validada de clientes que son EMPRESAS DEL GRUPO (_scripts/clientes_grupo.txt)."""
+    f = Path(__file__).with_name("clientes_grupo.txt")
+    if not f.exists():
+        sys.exit(f"FALTA la lista de filiales: {f}")
+    return {_norm_cliente(l) for l in f.read_text(encoding="utf-8").splitlines()
+            if l.strip() and not l.lstrip().startswith("#")}
+
+
 def tabla_terceros(df):
     out = pd.DataFrame({
         "sociedad": df[col(df, "Sociedad")],
@@ -193,6 +209,15 @@ def tabla_terceros(df):
         "mt2": df["MT2"].astype(float),
     })
     out["periodo"] = [periodo(a, m) for a, m in zip(out["anio"], out["mes_num"])]
+    # Filiales propias: la venta a ellas NO es venta a cliente tercero y ya
+    # aparece en venta_sociedad (venta de la filial a su cliente final).
+    grupo = clientes_grupo()
+    out["es_filial"] = out["cliente"].map(lambda c: _norm_cliente(c) in grupo)
+    vistas = set(out.loc[out["es_filial"], "cliente"].map(_norm_cliente))
+    print(f"    filiales marcadas: {len(vistas)} de {len(grupo)} de la lista "
+          f"({out.loc[out['es_filial'], 'eur'].sum() / 1e6:,.1f} M€ de venta a filiales)")
+    for falta in sorted(grupo - vistas):
+        print(f"    ⚠ de la lista no aparece en el Excel: {falta}")
     return out
 
 

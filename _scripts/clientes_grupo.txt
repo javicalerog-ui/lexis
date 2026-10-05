@@ -1,0 +1,50 @@
+# Clientes de "Venta terceros" que son EMPRESAS DEL GRUPO (filiales / tiendas propias).
+# Se marcan es_filial = true en datos.venta_terceros y quedan FUERA de "clientes terceros"
+# y de la vista ventas_pais (evita contar dos veces la venta fabrica -> filial -> cliente final).
+#
+# Lista validada por Javi el 2026-10-05. NO se deduce del nombre: "Porsa Yapi", "Porsa Outlet" y
+# "Goa Invest" contienen nombres parecidos y son CLIENTES TERCEROS. Para anadir una filial nueva,
+# anadela aqui (una por linea, tal cual aparece en el Excel de origen) y relanza cargar_supabase.py.
+# La comparacion ignora mayusculas, tildes y espacios repetidos.
+
+# --- validadas por Javi (lista original) ---
+PORCELANOSA EAST CANADA INC
+PORCELANOSA CHILE SPA
+PORCELANOSA (SHANGHAI) TRADING CO L
+PORCELANOSA EST
+PORCELANOSA FRANCE SA
+PORCELANOSA OUEST
+PORCELANOSA PARIS IDF
+PORCELANOSA SUD OUEST
+SOCAMED
+PORCELANOSA MIDLANDS LTD
+PORCELANOSA NORTH WEST LTD
+PORCELANOSA SCOTLAND LTD
+PORCELANOSA UK LTD
+PORCELANOSA WESTERN LTD
+PORCELANOSA SPA
+PORCELANOSA MEXICO SA DE CV
+PORCELANOSA PORTO
+PORCELANOSA FLORIDA CORP
+PORCELANOSA LOS ANGELES INC
+PORCELANOSA NEW YORK INC
+PORCELANOSA SAN FRANCISCO INC
+
+# --- encontradas en los Excel 2022-2026 y validadas por Javi ---
+PORCELANOSA TEXAS CORPORATION
+PORCELANOSA YORKSHIRE LTD
+PORCELANOSA LISBOA-COMERCIO DE
+PORCELANOSA XTONE USA
+VENISPOR ITALIA SPA
+PORCELANOSA SOUTH EAST LTD (XTONE)
+PORCELANOSA GROUP LTD
+PORCELANOSA SWITZERLAND SARL
+PORCELANOSA PERU SAC
+PORCELANOSA MARYLAND INC
+PORCELANOSA ISRAEL LTD
+PORCELANOSA AUSTRALIA PTY LTD
+PORCELANOSA BL SRL
+PORCELANOSA ANDORRA SLU
+PORCELANOSA DEUTSCHLAND GMBH
+PORCELANOSA SCANDINAVIA AB
+PORCELANOSA DK APS
