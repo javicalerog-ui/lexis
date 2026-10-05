@@ -92,7 +92,15 @@ python _scripts\cargar_supabase.py
 select datos.run_query('select round(sum(eur)::numeric,2) as t from ventas_pais where pais_norm=''francia'' and anio=2025',
   (select id from auth.users where email='gpjcalero@gmail.com'));
 ```
-✅ Referencia conocida: Francia 2025 = **56.953.780,72 €** (si cambia, es que los datos nuevos traen cambios — no necesariamente un error, pero conviene saberlo).
+✅ Referencia conocida: Francia 2025 = **36.649.582,06 €** (si cambia, es que los datos nuevos traen cambios — no necesariamente un error, pero conviene saberlo). *(Hasta el 2026-10-05 era 56.953.780,72 €: esa cifra contaba dos veces la venta de fábrica a las filiales — ver «Filiales» abajo. No la uses como referencia.)*
+
+**Filiales (clientes que son empresas del Grupo) — desde 2026-10-05.** El Excel «Venta terceros» replica el Power BI de Silvestre e incluye la venta de fábrica a las filiales propias (Porcelanosa New York, UK, France, México, Socamed…). Esas filiales NO son clientes terceros, y su venta ya está en «Venta por sociedad» (lo que venden a su cliente final). La lista validada de **38 filiales** está en `_scripts\clientes_grupo.txt` y el cargador marca `venta_terceros.es_filial = true` al cargar:
+
+- La vista `ventas_pais` y los rankings de «clientes terceros» **excluyen** las filiales (2025: ventas por país 474,9 → 353,9 M€; «terceros» 230,9 → 109,9 M€).
+- **El nombre NO basta**: «Porsa Yapi», «Porsa Outlet» y «Goa Invest» NO son filiales (decisión de Javi). Manda la lista.
+- **Si aparece una filial nueva** (p. ej. una sociedad recién abierta): añade su nombre, tal cual sale en el Excel, a `_scripts\clientes_grupo.txt` y relanza `cargar_supabase.py`. El cargador imprime `filiales marcadas: 38 de 38` y avisa con ⚠ de cualquier nombre de la lista que ya no aparezca.
+- Para sospechar de nuevas filiales: en el Excel de origen (`sources\Ventas-de-terceros\`) las organizaciones de ventas del Grupo (columna «Org. de ventas») dan los nombres; un cliente cuyo nombre coincide con una de ellas es candidato.
+- **Pendiente de validar con Silvestre:** sus GPTs y su Power BI siguen contando las filiales dentro de «terceros»; las cifras de Lexis y de los GPTs ya no coinciden para «ventas por país» y «clientes terceros».
 
 ---
 
@@ -144,6 +152,18 @@ python _scripts\cargar_gd.py
 **Deduplica solo:** si descargas dos veces el mismo país, o guardas el mismo export con dos nombres, no se duplica (la clave es empresa+nombre+apellido+cargo+email).
 
 **Qué sube:** nombre, apellido, cargo, seniority, departamento, empresa, país, ciudad, industria, web, LinkedIn, teléfono y email directo. **No sube** datos financieros de la empresa (facturación, beneficio, activos) — fuera del alcance de "a quién contacto".
+
+---
+
+### 3.4 · Fichas de referencia (biografías, contexto de empresa) — NO por «Capturar»
+
+Para meter en la memoria un **documento de referencia** (el informe de Silvestre, un dossier de empresa, material de Marketing) **no uses «Capturar» ni el chat**: el pipeline de captura **resume cada entrada en 1-2 frases** y se pierde el detalle (así se perdieron los 4 hijos de la ficha de Silvestre). Usa el cargador de fichas, que **trocea** el documento en datos sueltos (~580 caracteres, uno por memoria, con su contexto) y los guarda literales:
+
+1. Prepara una carpeta con los `.md` y un `_plan.json`: `[{"fichero":"X.md","para":["email1","email2"],"seccion":"título"}]` (quién recibe cada ficha). Ejemplo hecho el 05-10: ver el scratchpad de esa sesión / `_scripts\cargar_fichas.py` (cabecera).
+2. Ensayo sin escribir: `python _scripts\cargar_fichas.py <carpeta> --seco`
+3. Carga real: `python -u _scripts\cargar_fichas.py <carpeta>` (lee las claves de `.env.local`; tarda ~3-4 min por el límite de Voyage). Es idempotente y deja las memorias-resumen antiguas en `superseded` (no borra nada).
+4. **Privacidad**: la memoria es POR USUARIO. Solo recibe una ficha quien aparece en `para`. Silvestre tiene su biografía; Javi y Jose María solo el contexto de empresa. **El procedimiento judicial de Banco de Valencia está excluido a propósito** (el script aborta si detecta esas palabras).
+5. Comprobar: preguntar como el usuario («¿qué hijos tiene…?», «¿qué sabes de mí?»).
 
 ---
 
@@ -206,9 +226,7 @@ values (
 update proactive_rules set next_due_at = now() where name = '<Nombre>';
 ```
 
-**Quién los dispara:** dos latidos independientes, cada 15 minutos:
-- GitHub Actions `.github/workflows/reminders-cron.yml` (llama a `/api/cron/reminders` **y** `/api/cron/proactive`) — se puede comprobar en la pestaña Actions del repo `javicalerog-ui/lexis`
-- Worker de Cloudflare `acta.gpjcalero.workers.dev` (solo recordatorios; salud desconocida, redundante)
+**Quién los dispara (actualizado 2026-10-05):** el latido real es **Supabase pg_cron cada minuto** (proyecto «javiercalero-collab's Project»; jobs `lexis-reminders` y `lexis-proactive`, secreto en Vault) — detalle y diagnóstico en la memoria `reference-lexis-push-recordatorios`. El workflow de GitHub `.github/workflows/reminders-cron.yml` queda de respaldo (GitHub lo estrangula a cada 2-5 h).
 
 ---
 
@@ -223,6 +241,11 @@ update proactive_rules set next_due_at = now() where name = '<Nombre>';
 | `403 Forbidden` al cargar | La tabla no pasó por `registrar_tabla` (le falta el permiso de escritura) | Ejecutar `select datos.registrar_tabla('<tabla>');` |
 | El chat responde pero no ve una tabla concedida | La política de la tabla se creó con una versión antigua de `registrar_tabla` | Volver a ejecutar `select datos.registrar_tabla('<tabla>');` (borra y recrea la política) |
 | El cargador tarda "demasiado" | GD son 204k filas | Normal: varios minutos. Dejarlo terminar |
+| El asistente contesta a todos «No he podido responder a eso ahora mismo» | Sin saldo en OpenRouter (error 402) | Cargar saldo y activar la recarga automática en openrouter.ai/settings/credits. Comprobar: `GET /api/v1/credits` con la clave |
+| Errores 429 de Voyage / «no he podido…» al hacer 2 preguntas seguidas | Voyage sin método de pago: límite de **3 consultas/min** (cada pregunta gasta ≥2) | Añadir tarjeta en dashboard.voyageai.com (los 200 M de tokens gratis siguen valiendo; el límite sube) |
+| Cambio variables de entorno en Vercel y no pasa nada | Hay **DOS proyectos «lexis»**: el de la cuenta `gpjcalero` está muerto (último deploy 1-sep). El vivo es el de **`javicalerog@gmail.com`**. Además las variables solo aplican a despliegues NUEVOS | Entrar con javicalerog; tras guardar, lanzar un despliegue (commit vacío) |
+| Una ficha cargada por «Capturar» se «olvida» de los detalles | El pipeline la resume a 1-2 frases | Usar `cargar_fichas.py` (ver 3.4) |
+| Los scripts `.ps1` con tildes mandan texto roto (`Â¿QuÃ©…`) | PowerShell 5.1 lee `.ps1` sin BOM como ANSI | Guardar con BOM UTF-8 o pasar los textos desde un fichero `.txt` UTF-8 |
 
 ---
 
