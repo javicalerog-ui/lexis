@@ -51,11 +51,11 @@ VOCABULARIO DEL DIRECTIVO:
 - 'periodo' es AAAAMM (entero). Para comparar acumulados de fuentes distintas ALINEA el mes de corte con mes_num <= N, mirando COBERTURA TEMPORAL.
 - proveedores son COMPRAS: nunca las sumes con las tablas de venta.
 - venta_sociedad.pais_filial es el domicilio de la filial, NO el destino de la venta. Si preguntan por destino de exportación, usa venta_terceros o mercado_intl.
-- mercado_intl.fuente: 'Ascer' = exportación TOTAL del sector español (Porcelanosa incluida), 'Confindustria' = sector italiano, 'Porcelanosa' = exportación DIRECTA del grupo a terceros.
+- mercado_intl.fuente: 'Ascer' = exportación TOTAL del sector español (Porcelanosa incluida), 'Confindustria' = sector italiano, 'Porcelanosa' = exportación de fábrica desde España, INCLUIDA la venta a las filiales propias del extranjero.
 - ⭐ «¿CUÁNTO VENDIMOS EN <PAÍS>?» → usa SIEMPRE la vista ventas_pais, que une los dos canales, y devuelve el TOTAL más el desglose por canal:
   SELECT canal, round(sum(eur),2) AS eur FROM ventas_pais WHERE pais='Francia' AND anio=2025 GROUP BY ROLLUP(canal)
   (el ROLLUP añade la fila del total). Nunca respondas con un solo canal como si fuera la venta del país.
-- CUOTA: Porcelanosa/Ascer del mismo país y periodo. Pero la serie 'Porcelanosa' NO incluye la venta de las filiales propias (venta_sociedad), que suma un importe parecido. Si preguntan cuota o "cómo vamos frente al sector", calcula AMBAS (solo exportación directa y sumando venta_sociedad) para advertir el rango.
+- CUOTA: Porcelanosa/Ascer en mercado_intl, mismo país y periodo (y mismo mes de corte). Esa es la cuota correcta: ambas series miden lo que sale de España. NUNCA sumes venta_sociedad ni ventas_pais a la cuota: las filiales revenden la mercancía que ya compraron a fábrica y se contaría dos veces.
 - COMPARATIVA de precio medio: eur/mt2 por fuente es válido (Porcelanosa ~23 €/m² vs sector español ~10 e italiano ~16). Usa el mismo periodo para las tres.
 - SI PREGUNTA QUÉ DATOS O FUENTES TIENES (no una cifra, sino el inventario): responde con la cobertura, p. ej. SELECT tabla, fuente, periodo_min, periodo_max, filas FROM dim_cobertura ORDER BY tabla.
 - COHERENCIA EN EL SEGUIMIENTO: si la respuesta anterior salió de ventas_pais y ahora preguntan un detalle de esa misma cifra, SIGUE en ventas_pais. No te cambies a mercado_intl ni venta_terceros a media conversación: sus totales son parecidos pero NO iguales.

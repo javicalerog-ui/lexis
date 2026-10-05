@@ -18,11 +18,14 @@ export const TABLAS_ESQUEMA: Record<string, string> = {
   -- Exportacion mensual por pais y fuente, en euros y metros cuadrados.
   -- fuente='Ascer' = exportacion TOTAL del sector ceramico espanol (incluye a
   -- Porcelanosa dentro); 'Confindustria' = sector ceramico italiano (competidor);
-  -- 'Porcelanosa' = exportacion DIRECTA del grupo a clientes terceros.
-  -- *** PERIMETRO CRITICO: la serie 'Porcelanosa' NO incluye lo que venden las
-  -- filiales propias (venta_sociedad), que suma un importe similar. Una cuota
-  -- calculada solo con esta tabla INFRAESTIMA a la mitad (2025: 6,6% vs ~13,6%
-  -- sumando filiales). Al dar una cuota, advertirlo o sumar venta_sociedad. ***
+  -- 'Porcelanosa' = exportacion de FABRICA desde Espana, INCLUIDA la venta a las
+  -- filiales propias del extranjero (igual que Ascer, que cuenta todo lo que
+  -- sale de Espana). Por eso la cuota Porcelanosa/Ascer de esta tabla ya es la
+  -- correcta (2025: 6,6% en EUR, 2,9% en m2).
+  -- *** NUNCA sumes venta_sociedad para la cuota: lo que las filiales venden a
+  -- su cliente es la misma mercancia que compraron a fabrica (2025: 5,62 M m2
+  -- comprados vs 5,42 M m2 vendidos) y la contarias dos veces (daria un falso
+  -- 13,6%). ***
   -- Precio medio (eur/mt2) SI es comparable entre las tres fuentes.
   -- HUECO: en Ascer NO existe julio de 2025 (agosto engloba jul+ago).
     fuente text

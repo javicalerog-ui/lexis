@@ -15,7 +15,7 @@
 | `mercado_provincial` | ✅ | ✅ | ✅ |
 | `espana_provincial` | ✅ | ✅ | ✅ |
 | `venta_sociedad` (filiales propias) | ✅ | ✅ | ✅ |
-| `venta_terceros` (exportación directa) | ✅ | ✅ | ✅ |
+| `venta_terceros` (venta de fábrica fuera de España: terceros + filiales, `es_filial`) | ✅ | ✅ | ✅ |
 | `dim_cobertura` · `dim_pais` | ✅ | ✅ | ✅ |
 | `proveedores` (compras) | ✅ | ✅ | ❌ |
 | `hpe_propuestas` (propuestas hoteleras) | ✅ | ❌ | ✅ |
@@ -100,6 +100,7 @@ select datos.run_query('select round(sum(eur)::numeric,2) as t from ventas_pais 
 - **El nombre NO basta**: «Porsa Yapi», «Porsa Outlet» y «Goa Invest» NO son filiales (decisión de Javi). Manda la lista.
 - **Si aparece una filial nueva** (p. ej. una sociedad recién abierta): añade su nombre, tal cual sale en el Excel, a `_scripts\clientes_grupo.txt` y relanza `cargar_supabase.py`. El cargador imprime `filiales marcadas: 38 de 38` y avisa con ⚠ de cualquier nombre de la lista que ya no aparezca.
 - Para sospechar de nuevas filiales: en el Excel de origen (`sources\Ventas-de-terceros\`) las organizaciones de ventas del Grupo (columna «Org. de ventas») dan los nombres; un cliente cuyo nombre coincide con una de ellas es candidato.
+- **Cuota frente a Ascer (corregido 2026-10-05):** la serie «Porcelanosa» de `mercado_intl` ya incluye la exportación a las filiales (igual que Ascer cuenta todo lo que sale de España), así que la cuota correcta es esa serie / Ascer: **2025 = 6,6 % en € y 2,9 % en m²**. El antiguo «~13,6 % sumando filiales» (heredado de Clavis) contaba dos veces la mercancía: la fábrica vendió 5,62 M m² a las filiales y estas vendieron 5,42 M m² a sus clientes. **Nunca sumar `venta_sociedad` para la cuota.** (El `COMMENT ON` de la migración 20260908 conserva el texto viejo, pero el modelo no lo lee: lee `schema-prompt.ts`.)
 - **Pendiente de validar con Silvestre:** sus GPTs y su Power BI siguen contando las filiales dentro de «terceros»; las cifras de Lexis y de los GPTs ya no coinciden para «ventas por país» y «clientes terceros».
 
 ---
