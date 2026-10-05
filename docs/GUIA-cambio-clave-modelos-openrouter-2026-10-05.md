@@ -57,6 +57,8 @@ $f="C:\Users\ES00500148\Desktop\Proyectos IA\10-lexis-segundo-cerebro\.env.local
 ## Fase 2 — Producción en Vercel (pasos 5-6) · solo cuando Claude confirme que las pruebas pasan
 
 ### Paso 5 — Actualizar las variables en Vercel
+> 🔴 **Entra con la cuenta `javicalerog@gmail.com`.** Hay OTRO proyecto «lexis» en la cuenta gpjcalero que está muerto desde el 1-sep: si cambias las variables ahí, no pasa nada (ya ocurrió el 05-10). Comprueba arriba a la izquierda que pone **javicalerog-gm…**.
+
 1. Entra en `https://vercel.com` → equipo **«javicalerog-gmailcom's projects»** → proyecto **`lexis`**.
 2. Pestaña **«Settings»** → menú lateral **«Environment Variables»**.
 3. Para cada variable de la tabla: si ya existe, pulsa **«⋯» → «Edit»**; si no existe, créala con **«Add New»**. Marca los entornos **Production** y **Preview**.

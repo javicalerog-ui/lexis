@@ -7,7 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { chat } from '@/lib/llm/escalation';
 import { esquemaParaTablas, tablasConsultables } from './schema-prompt';
-import { ejecutarSqlDatos, formatearResultado } from './run';
+import { ejecutarSqlDatos, formatearResultado, resultadoVacio } from './run';
 
 export interface TurnoChat {
   role: 'user' | 'assistant' | string;
@@ -60,7 +60,8 @@ VOCABULARIO DEL DIRECTIVO:
 - SI PREGUNTA QUÉ DATOS O FUENTES TIENES (no una cifra, sino el inventario): responde con la cobertura, p. ej. SELECT tabla, fuente, periodo_min, periodo_max, filas FROM dim_cobertura ORDER BY tabla.
 - COHERENCIA EN EL SEGUIMIENTO: si la respuesta anterior salió de ventas_pais y ahora preguntan un detalle de esa misma cifra, SIGUE en ventas_pais. No te cambies a mercado_intl ni venta_terceros a media conversación: sus totales son parecidos pero NO iguales.
 
-Si la pregunta NO se puede responder con este esquema, devuelve exactamente: IMPOSIBLE`;
+Si la pregunta NO se puede responder con este esquema, devuelve exactamente: IMPOSIBLE
+- ⚠️ Devuelve IMPOSIBLE SIEMPRE que la pregunta sea sobre PERSONAS (familia, hijos, pareja, biografía, cargos, quién es alguien), historia o accionariado de la empresa, opiniones, recordatorios o cualquier cosa que no sea una CIFRA de estas tablas. Un nombre propio de persona NO es un cliente: no lo busques en 'cliente' ni en 'empresa' salvo que la pregunta pida explícitamente ventas o compras de ese cliente/proveedor.`;
 
 const RESPUESTA_PROMPT = `Eres el asistente ejecutivo. Responde a la pregunta del directivo usando ÚNICAMENTE los datos de la tabla de resultados que te doy.
 
@@ -219,6 +220,13 @@ export async function responderPreguntaDatos(
       'No he podido calcular eso con los datos que tengo cargados. ' +
       'Si me lo planteas de otra forma, lo intento de nuevo.'
     );
+  }
+  // Resultado vacío → no contestamos desde datos: devolvemos null para que el
+  // chat caiga a la MEMORIA. Evita que una pregunta mal enrutada («¿y los hijos
+  // de Silvestre?» tratado como cliente, 2026-10-05) se quede en un «no he
+  // podido obtener el dato» cuando la respuesta estaba en la memoria.
+  if (resultadoVacio(res.rows)) {
+    return null;
   }
 
   const tabla = formatearResultado(res.rows);
