@@ -211,8 +211,19 @@ def tabla_terceros(df):
     out["periodo"] = [periodo(a, m) for a, m in zip(out["anio"], out["mes_num"])]
     # Filiales propias: la venta a ellas NO es venta a cliente tercero y ya
     # aparece en venta_sociedad (venta de la filial a su cliente final).
-    grupo = clientes_grupo()
-    out["es_filial"] = out["cliente"].map(lambda c: _norm_cliente(c) in grupo)
+    # FUENTE DE VERDAD: la columna «Tipo cliente» del Excel (la escribe
+    # silvestre-gpts\_scripts\build_terceros.py con SU lista clientes_grupo.txt).
+    # Solo si el Excel es antiguo (sin esa columna) se usa la copia local de la lista.
+    try:
+        c_tipo = col(df, "Tipo cliente")
+        out["es_filial"] = df[c_tipo].astype(str).str.strip().str.lower().eq("filial del grupo")
+        grupo = set(out.loc[out["es_filial"], "cliente"].map(_norm_cliente))
+        print("    es_filial leído de la columna «Tipo cliente» del Excel")
+    except KeyError:
+        print("    ⚠ El Excel NO trae «Tipo cliente» (versión antigua): uso la lista local _scripts/clientes_grupo.txt."
+              " Regenera con silvestre-gpts\\_scripts\\build_terceros.py para tener una única fuente de verdad.")
+        grupo = clientes_grupo()
+        out["es_filial"] = out["cliente"].map(lambda c: _norm_cliente(c) in grupo)
     vistas = set(out.loc[out["es_filial"], "cliente"].map(_norm_cliente))
     print(f"    filiales marcadas: {len(vistas)} de {len(grupo)} de la lista "
           f"({out.loc[out['es_filial'], 'eur'].sum() / 1e6:,.1f} M€ de venta a filiales)")
