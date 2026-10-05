@@ -95,7 +95,8 @@ export const TABLAS_ESQUEMA: Record<string, string> = {
   -- Venta de las organizaciones de ventas de FABRICA fuera de Espana, por pais
   -- y cliente (2022 en adelante). 'cliente' es nombre real.
   -- *** OJO: incluye la venta a FILIALES PROPIAS del Grupo (Porcelanosa New York,
-  -- UK, France, Mexico...), marcadas con es_filial = true. Esas NO son clientes
+  -- UK, France, Mexico...), marcadas con es_filial = true. «Filiales» = «tiendas
+  -- propias» = «red propia» = «empresas del Grupo» = «intragrupo». Esas NO son clientes
   -- terceros: es mercancia que la filial revende y ya cuenta en venta_sociedad. ***
   -- "Clientes terceros", rankings de clientes, cartera, "quien ha comprado mas":
   -- filtra SIEMPRE WHERE NOT es_filial. Solo si preguntan expresamente por la
