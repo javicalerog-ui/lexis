@@ -1,12 +1,25 @@
 // =====================================================
-// Adapter Voyage AI — embeddings
-// Modelo: voyage-4-lite (1024 dims, Matryoshka)
-// Docs: https://docs.voyageai.com/reference/embeddings-api
+// Adapter de embeddings — modelo voyage-4-lite (1024 dims, Matryoshka)
+//
+// RUTA POR DEFECTO: OpenRouter (2026-10-07). Se usa el MISMO modelo
+// `voyageai/voyage-4-lite` que servía Voyage directo: verificado que con
+// output_dimension+input_type los vectores son idénticos (coseno = 1,0), así que
+// las memorias ya guardadas siguen siendo compatibles sin recargar nada. Ventaja:
+// se paga del crédito de OpenRouter (ya configurado) y se evita el límite de 3
+// peticiones/min de la cuenta gratuita de Voyage, que es lo que hacía fallar la
+// 3ª pregunta seguida. Para volver a Voyage directo: EMBEDDINGS_PROVIDER=voyage.
+// Docs Voyage: https://docs.voyageai.com/reference/embeddings-api
 // =====================================================
 
-const VOYAGE_ENDPOINT = 'https://api.voyageai.com/v1/embeddings';
+const VIA_OPENROUTER = (process.env.EMBEDDINGS_PROVIDER || 'openrouter') !== 'voyage';
 
-const MODEL = process.env.VOYAGE_MODEL || 'voyage-4-lite';
+const EMBED_ENDPOINT = VIA_OPENROUTER
+  ? 'https://openrouter.ai/api/v1/embeddings'
+  : 'https://api.voyageai.com/v1/embeddings';
+
+const MODEL =
+  process.env.VOYAGE_MODEL ||
+  (VIA_OPENROUTER ? 'voyageai/voyage-4-lite' : 'voyage-4-lite');
 const DIMENSIONS = Number(process.env.VOYAGE_DIMENSIONS || 1024);
 
 interface VoyageResponse {
@@ -29,14 +42,22 @@ export async function embed(
 ): Promise<number[][]> {
   if (!texts.length) return [];
 
-  const apiKey = process.env.VOYAGE_API_KEY;
-  if (!apiKey) throw new Error('VOYAGE_API_KEY no configurada');
+  const apiKey = VIA_OPENROUTER
+    ? process.env.OPENROUTER_API_KEY
+    : process.env.VOYAGE_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      VIA_OPENROUTER
+        ? 'OPENROUTER_API_KEY no configurada (embeddings via OpenRouter)'
+        : 'VOYAGE_API_KEY no configurada'
+    );
+  }
 
   const cleaned = texts.map((t) => (t || '').slice(0, 32_000));
 
   // Timeout defensivo: sin él, un Voyage colgado bloquea la función serverless
   // hasta que Vercel la mata (504 no-JSON). 20s cubre de sobra un embed normal.
-  const res = await fetch(VOYAGE_ENDPOINT, {
+  const res = await fetch(EMBED_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
