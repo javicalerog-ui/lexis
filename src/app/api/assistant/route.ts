@@ -21,9 +21,12 @@ import {
   capturarTurno,
   confirmacionRegistro,
 } from '@/lib/assistant/registro';
+import { waitUntil } from '@vercel/functions';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+// 150 s (Fluid Compute ON): da margen al guardado en segundo plano (waitUntil),
+// que comparte el reloj de la función. La respuesta al usuario llega mucho antes.
+export const maxDuration = 150;
 
 const Schema = z.object({
   pregunta: z.string().min(1).max(2000),
@@ -53,10 +56,13 @@ export async function POST(req: Request) {
 
   // 0) CAPTURA-TODO (decisión 2026-09-08): TODO turno del usuario se guarda
   //    como memoria — el clasificador NUNCA decide si se guarda, solo da forma
-  //    a la respuesta. Corre en PARALELO con el cálculo de la respuesta para
-  //    no sumar latencia; se espera antes de devolver (en serverless una
-  //    promesa huérfana puede morir congelada a mitad de escritura).
-  const captura = capturarTurno(supabase, user.id, body.pregunta).then(
+  //    a la respuesta. Corre en PARALELO con el cálculo de la respuesta.
+  //    (2026-10-07) Usa un cliente de SERVICIO, no el de cookies: el guardado
+  //    termina en segundo plano con waitUntil DESPUÉS de enviar la respuesta,
+  //    cuando el contexto de cookies ya no existe. El pipeline recibe user.id
+  //    explícito (classify pasa p_user_id), así que el service role escribe las
+  //    filas correctas sin depender de RLS por cookie.
+  const captura = capturarTurno(createServiceClient(), user.id, body.pregunta).then(
     (result) => ({ ok: true as const, result }),
     () => ({ ok: false as const, result: null })
   );
@@ -124,7 +130,7 @@ export async function POST(req: Request) {
         })),
       };
     } catch (e) {
-      await captura; // la captura del turno no se pierde aunque falle la respuesta
+      waitUntil(captura); // la captura sigue en segundo plano aunque falle la respuesta
       return NextResponse.json(
         { error: 'assistant_failed', detail: String(e).slice(0, 300) },
         { status: 500 }
@@ -132,8 +138,9 @@ export async function POST(req: Request) {
     }
   }
 
-  // La ingesta del turno termina antes de responder (fallo aquí no rompe la
-  // respuesta: un turno-consulta no contiene información nueva que perder).
-  await captura;
+  // La ingesta del turno termina en SEGUNDO PLANO (waitUntil): ya no bloquea la
+  // respuesta, que es lo que metía ~13 s de espera en cada turno. Fluid Compute
+  // mantiene viva la función hasta que termina, dentro de maxDuration.
+  waitUntil(captura);
   return NextResponse.json(payload);
 }
