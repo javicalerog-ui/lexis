@@ -13,11 +13,11 @@ import styles from './FloatingVoiceCapture.module.css';
  *  2. Captura de calendario: subes foto/screenshot del calendario →
  *     extractor de visión → /events/preview para revisar y crear.
  *
- * Oculto en /, /login, /oauth/*, /interview, /events/preview.
+ * Oculto en /, /login, /asistente (modo Silvestre), /auth/*, /oauth/*, etc.
  */
 
-const HIDDEN_PATHS = ['/', '/login'];
-const HIDDEN_PREFIXES = ['/oauth/', '/interview', '/events/preview', '/inbox', '/settings/notifications', '/settings/proactive-rules', '/meetings'];
+const HIDDEN_PATHS = ['/', '/login', '/asistente'];
+const HIDDEN_PREFIXES = ['/auth', '/oauth/', '/interview', '/events/preview', '/inbox', '/settings/notifications', '/settings/proactive-rules', '/meetings'];
 
 type Mode = 'voice' | 'calendar_image';
 type Status = 'idle' | 'open' | 'ingesting' | 'success' | 'error';
@@ -202,7 +202,6 @@ export function FloatingVoiceCapture() {
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (f) uploadAndProcessCalendarImage(f);

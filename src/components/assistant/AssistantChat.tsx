@@ -7,7 +7,6 @@
 // =====================================================
 
 import { useState, useRef, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 interface Fuente {
   n: number;
@@ -211,17 +210,10 @@ export function AssistantChat() {
     }
   }
 
-  async function salir() {
-    // Un toque accidental no debe cerrar la sesión: volver a entrar exige
-    // contraseña y ese roce es lo que mata el uso diario.
-    const seguro = window.confirm(
-      '¿Seguro que quieres salir? Para volver a entrar necesitarás la contraseña.'
-    );
-    if (!seguro) return;
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = '/auth/login';
-  }
+  // Sin botón "Salir" en el modo simple (decisión 2026-10-07): un toque cerraba
+  // la sesión en TODOS sus dispositivos (signOut global) y volver a entrar exige
+  // una contraseña que Silvestre no puede recuperar por email → se quedaba fuera.
+  // Para cerrar su sesión, Javi borra la fila en auth.sessions desde Supabase.
 
   return (
     <main
@@ -237,7 +229,7 @@ export function AssistantChat() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: 'center',
           padding: '14px 18px',
           borderBottom: '1px solid var(--line)',
           background: 'var(--overlay-bg)',
@@ -254,20 +246,6 @@ export function AssistantChat() {
         >
           Lexis
         </span>
-        <button
-          onClick={salir}
-          style={{
-            fontSize: 14,
-            color: 'var(--fg-2)',
-            background: 'transparent',
-            border: '1px solid var(--line)',
-            borderRadius: 'var(--r-full)',
-            padding: '6px 14px',
-            cursor: 'pointer',
-          }}
-        >
-          Salir
-        </button>
       </header>
 
       <div ref={scrollRef} style={{ overflowY: 'auto', padding: '20px 16px' }}>
