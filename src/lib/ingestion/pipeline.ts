@@ -130,12 +130,16 @@ ${input.raw_text.slice(0, 12_000)}
     throw new Error(`No se pudo insertar memory: ${error?.message}`);
   }
 
-  // 5. Attach proyectos y entidades
+  // 5. Attach proyectos y entidades. Solo las fichas curadas de proyecto
+  //    (cargar_proyectos_lexis.py → source_metadata.kind='project') pueden
+  //    CREAR proyectos; el resto de capturas solo se enlaza a los existentes
+  //    (GUARD en projects/resolve.ts).
   const attachedProjects = await attachMemoryToProjects(
     supabase,
     userId,
     memory.id,
-    parsed.projects || []
+    parsed.projects || [],
+    { allowCreate: (input.source_metadata as any)?.kind === 'project' }
   );
   const attachedEntities = await attachMemoryToEntities(
     supabase,

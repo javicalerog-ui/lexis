@@ -13,21 +13,23 @@ export interface AttachedProject {
 }
 
 /**
- * Para cada nombre de proyecto extraído por el LLM, resuelve (o crea) y
- * enlaza con la memoria.
+ * Para cada nombre de proyecto extraído por el LLM, resuelve y enlaza con la
+ * memoria. Con allowCreate=false solo enlaza a proyectos existentes (ver GUARD
+ * en resolve.ts); los nombres que no casan con ninguno se ignoran.
  */
 export async function attachMemoryToProjects(
   supabase: SupabaseClient,
   userId: string,
   memoryId: string,
-  projectNames: string[]
+  projectNames: string[],
+  opts: { allowCreate?: boolean } = {}
 ): Promise<AttachedProject[]> {
   const unique = Array.from(new Set(projectNames.map((n) => n.trim()).filter(Boolean)));
   const attached: AttachedProject[] = [];
 
   for (const name of unique) {
     try {
-      const resolved = await resolveProject(supabase, userId, name);
+      const resolved = await resolveProject(supabase, userId, name, opts);
       if (!resolved) continue;
 
       const { error } = await supabase

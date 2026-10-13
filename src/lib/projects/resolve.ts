@@ -6,7 +6,15 @@
 // Estrategia:
 //  1. Match exacto por slug/name (case-insensitive)
 //  2. Similarity por pg_trgm sobre name
-//  3. Si nada cuaja → crear nuevo
+//  3. Si nada cuaja → crear nuevo (SOLO si allowCreate !== false)
+//
+// GUARD (2026-10-13): las capturas normales (chat, conectores) llaman con
+// allowCreate=false → solo se ENLAZAN a proyectos que ya existen. Antes cada
+// nombre que el LLM extraía de una conversación creaba una fila nueva
+// ("ICB_LOCAL_PG", "MIGRATION-PLAN", rutas de carpeta...) y la lista de
+// proyectos se llenaba de fragmentos. Los proyectos nacen ahora desde las
+// fichas curadas (cargar_proyectos_lexis.py, kind='project') o desde el alta
+// manual (POST /api/projects).
 // =====================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -24,7 +32,8 @@ export interface ResolvedProject {
 export async function resolveProject(
   supabase: SupabaseClient,
   userId: string,
-  name: string
+  name: string,
+  opts: { allowCreate?: boolean } = {}
 ): Promise<ResolvedProject | null> {
   const trimmed = name.trim();
   if (!trimmed || trimmed.length < 2) return null;
@@ -61,7 +70,10 @@ export async function resolveProject(
     };
   }
 
-  // 3. Crear nuevo. Asegurar slug único.
+  // 3. Crear nuevo — solo si el llamador lo permite (ver GUARD arriba).
+  if (opts.allowCreate === false) return null;
+
+  // Asegurar slug único.
   const finalSlug = await ensureUniqueSlug(supabase, userId, candidateSlug);
 
   const { data: inserted, error } = await supabase
