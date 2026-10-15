@@ -171,7 +171,13 @@ ${input.raw_text.slice(0, 12_000)}
     (input.source_metadata as any)?.connector_type === 'calendar' ||
     (input.source_metadata as any)?.connector_origin === 'calendar';
 
-  if (!originIsCalendar) {
+  // Skip también en fichas de proyecto (cargar_proyectos_lexis.py,
+  // kind='project'): un dossier menciona fechas internas ("corte semanal",
+  // "entrega 30-09", "piloto 2027") que NO son recordatorios del usuario; si se
+  // extraen, llenan la bandeja de avisos fantasma (2026-10-13 creó 11).
+  const isProjectFiche = (input.source_metadata as any)?.kind === 'project';
+
+  if (!originIsCalendar && !isProjectFiche) {
     try {
       const inferredSource =
         input.source_type === 'voice'
