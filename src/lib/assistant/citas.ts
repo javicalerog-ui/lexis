@@ -24,6 +24,16 @@ export interface FuenteSimple {
 const MARCA = /\s?\[(\d+(?:\s*[,y]\s*\d+)*)\]/g;
 const PREFIJO_FICHA = /^\[(?:Ficha de|Contexto de empresa)[^\]]*\]\s*/;
 
+/** Markdown → texto llano para la tarjeta de la fuente. */
+function llano(t: string): string {
+  return t
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/[*_`]+/g, '')
+    .replace(/^\s*[-•]\s+/gm, '')
+    .replace(/\s*\n+\s*/g, ' ')
+    .trim();
+}
+
 function fechaLarga(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('es-ES', {
@@ -50,7 +60,7 @@ export function prepararRespuestaSimple(
   sources.forEach((s, i) => {
     if (!citadas.has(i + 1)) return;
     const md = (s.source_metadata ?? {}) as Record<string, unknown>;
-    const resumen = (s.summary || '').trim();
+    const resumen = llano(s.summary || '');
     const fecha = fechaLarga(s.captured_at);
     const imagenPath = typeof md.storage_path === 'string' ? md.storage_path : null;
 

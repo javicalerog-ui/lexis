@@ -92,7 +92,11 @@ const celdas = (l: string) =>
 // Markdown ligero y seguro: negritas, listas con «- » y TABLAS convertidas en
 // lista (en un móvil una tabla ancha obliga a desplazar en horizontal).
 function Formateado({ texto }: { texto: string }) {
-  const lineas = texto.replace(/^#{1,6}\s+/gm, '').split('\n');
+  const lineas = texto
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\[([^\]]+)\]\((?:https?:)?[^)]*\)/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .split('\n');
   const bloques: React.ReactNode[] = [];
   let i = 0;
   while (i < lineas.length) {

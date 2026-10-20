@@ -304,6 +304,7 @@ async function guardarFoto(
     await ingest(svc, userId, {
       source_type: 'image',
       raw_text: raw,
+      captured_at: new Date().toISOString(),
       source_uri: storagePath ? `storage://lexis-raw/${storagePath}` : undefined,
       source_metadata: {
         via: 'asistente-foto',

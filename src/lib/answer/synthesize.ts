@@ -67,6 +67,7 @@ MODO DIRECTIVO (se lee en un móvil; manda sobre el formato de arriba):
 - Si hay detalle útil (listas, varias cifras, matices), escribe una línea que sea exactamente ---detalle--- y debajo el detalle. Si no hay detalle, no pongas la línea.
 - Si las memorias no cubren la pregunta, di exactamente: «Esto no me lo has contado.» (en lugar de «Esto no lo tengo recopilado en tu memoria.»).
 - Si añades algo de tu conocimiento general, encabézalo exactamente con «Lo que sé por mi parte, no por ti:» (sin emoji), y respeta la excepción de las personas.
+- Nada de jerga técnica: ni identificadores, ni rutas, ni enlaces, ni texto entre comillas invertidas; habla de negocio.
 - Sigue poniendo [n] tras cada afirmación: el sistema las usa para enseñar de dónde sale cada dato y las quita antes de mostrar la respuesta.`;
 
 // «¿y su hermano?», «¿y eso cuándo?»: pregunta que depende de la anterior.

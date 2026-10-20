@@ -8,6 +8,7 @@
 // =====================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { enSegundaPersona } from './registro';
 
 const RX_OLVIDAR =
   /^\s*(?:por favor,?\s*)?(?:olv[ií]da(?:te)?(?:\s+de)?|borra|elimina|quita)\s+(?:lo\s+[uú]ltimo|eso|esto|lo\s+anterior|lo\s+que\s+te\s+(?:acabo\s+de|he)\s+(?:decir|dicho|contar|contado|mandar|mandado|enviar|enviado))\b[\s.!¡?¿]*(?:por favor)?[\s.!]*$/i;
@@ -50,7 +51,9 @@ export async function olvidarUltimo(svc: SupabaseClient, userId: string): Promis
     .eq('status', 'pending')
     .select('id');
 
-  const resumen = (m.summary || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  const resumen = enSegundaPersona((m.summary || '').replace(/\s+/g, ' '))
+    .slice(0, 200)
+    .replace(/[.\s]+$/, '');
   const avisos = cancelados?.length ? ' Y he quitado el aviso que tenía programado.' : '';
   return `Hecho, lo he olvidado${resumen ? `: «${resumen}»` : ''}.${avisos}`;
 }

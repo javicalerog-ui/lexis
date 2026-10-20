@@ -102,6 +102,8 @@ export function capturarTurno(
   return ingest(supabase, userId, {
     source_type: 'text',
     raw_text: texto,
+    // «Me lo contaste el…» = cuándo lo dijo, no una fecha que mencione.
+    captured_at: new Date().toISOString(),
     source_metadata: { via: 'asistente' },
   }).catch(async (e) => {
     // Un guardado fallido NO puede perderse en silencio (corre en segundo
@@ -128,10 +130,24 @@ const RX_PIDE_AVISO = /recu[eé]rda(me|melo|nos)|av[ií]sa(me|nos)|alarma|record
 export function cuandoLlano(ev: { due_at: string; all_day: boolean; timezone?: string }): string {
   const tz = ev.timezone || 'Europe/Madrid';
   const d = new Date(ev.due_at);
-  const dia = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz });
+  const dia = d
+    .toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz })
+    .replace(',', '');
   if (ev.all_day) return `el ${dia}`;
   const hora = d.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', timeZone: tz });
   return `el ${dia} a las ${hora}`;
+}
+
+/** «El usuario indica que mañana…» → «Mañana…» (el resumen se escribe en
+ *  tercera persona para la memoria; en la pantalla suena a informe). */
+export function enSegundaPersona(resumen: string): string {
+  const t = resumen
+    .trim()
+    .replace(
+      /^El usuario\s+(?:indica|comenta|dice|explica|cuenta|informa|señala|apunta|anota|menciona|registra|solicita|pide|quiere\s+(?:registrar|apuntar|anotar|recordar))\s+(?:que\s+)?/i,
+      ''
+    );
+  return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
 /** Redacta la confirmación visible cuando el usuario pidió registrar. */
@@ -149,19 +165,24 @@ export function confirmacionRegistro(
   // Sin jerga (2026-10-20): ni «Anotado» ni «Lo he relacionado con: …» —
   // las relaciones con proyectos/entidades son detalle interno.
   const partes: string[] = [];
-  partes.push(
-    result.decision === 'modification'
-      ? 'Apuntado. He actualizado lo que ya tenía sobre esto:'
-      : 'Apuntado:'
-  );
-  if (result.summary) partes.push(`**${result.summary.trim()}**`);
+  const eventos = result.events_created ?? [];
 
   // Avisos (L-11): decir CUÁNDO llegará; si pidió un aviso y no se entendió la
-  // fecha, decirlo en vez de dejarle creer que habrá aviso.
-  const eventos = result.events_created ?? [];
+  // fecha, decirlo en vez de dejarle creer que habrá aviso. Con un único aviso
+  // basta con eso: el resumen («El usuario solicita…») sobra.
   if (eventos.length === 1) {
-    partes.push(`Te avisaré ${cuandoLlano(eventos[0])}.`);
-  } else if (eventos.length > 1) {
+    partes.push(`Apuntado. Te avisaré ${cuandoLlano(eventos[0])}:`);
+    partes.push(`**${eventos[0].title}**`);
+  } else {
+    partes.push(
+      result.decision === 'modification'
+        ? 'Apuntado. He actualizado lo que ya tenía sobre esto:'
+        : 'Apuntado:'
+    );
+    if (result.summary) partes.push(`**${enSegundaPersona(result.summary)}**`);
+  }
+
+  if (eventos.length > 1) {
     partes.push(
       'Te avisaré:\n' + eventos.slice(0, 5).map((e) => `- ${e.title}: ${cuandoLlano(e)}`).join('\n')
     );
