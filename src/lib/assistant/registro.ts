@@ -146,7 +146,9 @@ export function enSegundaPersona(resumen: string): string {
     .replace(
       /^El usuario\s+(?:indica|comenta|dice|explica|cuenta|informa|señala|apunta|anota|menciona|registra|solicita|pide|quiere\s+(?:registrar|apuntar|anotar|recordar))\s+(?:que\s+)?/i,
       ''
-    );
+    )
+    // Cualquier otro verbo: «El usuario mantuvo una cena…» → «Mantuvo una cena…»
+    .replace(/^El usuario\s+/i, '');
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
