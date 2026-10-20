@@ -165,7 +165,11 @@ export function confirmacionRegistro(
   // Sin jerga (2026-10-20): ni «Anotado» ni «Lo he relacionado con: …» —
   // las relaciones con proyectos/entidades son detalle interno.
   const partes: string[] = [];
-  const eventos = result.events_created ?? [];
+  // Solo cuentan los avisos FUTUROS: «el jueves comí con…» puede crear un
+  // evento ya pasado que nunca sonará; anunciarlo como aviso sería mentir.
+  const eventos = (result.events_created ?? []).filter(
+    (e) => new Date(e.due_at).getTime() > Date.now() - 60_000
+  );
 
   // Avisos (L-11): decir CUÁNDO llegará; si pidió un aviso y no se entendió la
   // fecha, decirlo en vez de dejarle creer que habrá aviso. Con un único aviso
@@ -186,7 +190,7 @@ export function confirmacionRegistro(
     partes.push(
       'Te avisaré:\n' + eventos.slice(0, 5).map((e) => `- ${e.title}: ${cuandoLlano(e)}`).join('\n')
     );
-  } else if (opts.texto && RX_PIDE_AVISO.test(opts.texto)) {
+  } else if (eventos.length === 0 && opts.texto && RX_PIDE_AVISO.test(opts.texto)) {
     partes.push('No he entendido para cuándo quieres el aviso. Dime el día y la hora, por ejemplo: «recuérdamelo mañana a las 9».');
   }
   if (eventos.length > 0 && opts.tieneAvisos === false) {
