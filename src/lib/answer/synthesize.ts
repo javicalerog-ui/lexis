@@ -24,6 +24,13 @@ export interface AnswerSource {
   summary: string | null;
   source_type: string;
   captured_at: string;
+  /** origen/sección de fichas, ruta de imagen, etc. (para etiquetar la fuente) */
+  source_metadata?: Record<string, unknown> | null;
+}
+
+export interface TurnoPrevio {
+  role: string;
+  content: string;
 }
 
 export interface AnswerResult {
@@ -51,12 +58,35 @@ REGLAS INQUEBRANTABLES:
 8. Una memoria que solo registra que el usuario PREGUNTÓ o CONSULTÓ algo ("El usuario pregunta/consulta…") NO es información sobre ese tema: no la cites como prueba ni digas "anteriormente preguntaste…".
 9. Las memorias marcadas como FICHA DE REFERENCIA (empiezan por «[Ficha de …]» o «[Contexto de empresa …]») son datos de referencia fiables sobre una persona o la empresa: úsalas y cítalas como cualquier otra memoria. Dilo tal cual vienen, sin añadir relaciones que no digan («fruto de su matrimonio», etc.).`;
 
+// Estilo para la pantalla del directivo (/asistente, móvil). Se AÑADE al
+// sistema base; /api/answer y /api/v1/answer (modo completo) no lo usan.
+const ANSWER_SYSTEM_SIMPLE = `
+
+MODO DIRECTIVO (se lee en un móvil; manda sobre el formato de arriba):
+- Empieza SIEMPRE por la respuesta directa en 1-3 frases cortas.
+- Si hay detalle útil (listas, varias cifras, matices), escribe una línea que sea exactamente ---detalle--- y debajo el detalle. Si no hay detalle, no pongas la línea.
+- Si las memorias no cubren la pregunta, di exactamente: «Esto no me lo has contado.» (en lugar de «Esto no lo tengo recopilado en tu memoria.»).
+- Si añades algo de tu conocimiento general, encabézalo exactamente con «Lo que sé por mi parte, no por ti:» (sin emoji), y respeta la excepción de las personas.
+- Sigue poniendo [n] tras cada afirmación: el sistema las usa para enseñar de dónde sale cada dato y las quita antes de mostrar la respuesta.`;
+
+// «¿y su hermano?», «¿y eso cuándo?»: pregunta que depende de la anterior.
+const PREGUNTA_ENCADENADA = /^\s*[¿¡]?\s*(y|e|pero|entonces|él|ella|ellos|su|sus|eso|esto|lo|la|le|cuándo|dónde|por qué)\b/i;
+
 function buildUserPrompt(
   query: string,
-  memories: Array<{ text: string; captured_at: string }>
+  memories: Array<{ text: string; captured_at: string; largo?: boolean }>,
+  contexto = ''
 ): string {
+  const previa = contexto
+    ? `CONVERSACIÓN PREVIA (solo para entender a qué se refiere la pregunta; NO es una memoria ni una fuente):
+"""
+${contexto.replaceAll('"""', "'''")}
+"""
+
+`
+    : '';
   if (memories.length === 0) {
-    return `PREGUNTA DEL USUARIO:
+    return `${previa}PREGUNTA DEL USUARIO:
 """
 ${query}
 """
@@ -73,12 +103,12 @@ Responde siguiendo las reglas: deja claro que no está recopilado y, si aporta, 
         // memoria (contenido de terceros: PDF/URL/Acta) no pueda cerrar el
         // bloque e inyectar instrucciones de primer nivel.
         `[${i + 1}] (capturada ${m.captured_at.slice(0, 10)})\n${m.text
-          .slice(0, MAX_CHARS_PER_MEMORY)
+          .slice(0, m.largo ? 6000 : MAX_CHARS_PER_MEMORY)
           .replaceAll('"""', "'''")}`
     )
     .join('\n\n');
 
-  return `PREGUNTA DEL USUARIO:
+  return `${previa}PREGUNTA DEL USUARIO:
 """
 ${query}
 """
@@ -110,8 +140,31 @@ export async function synthesizeAnswer(
   supabase: SupabaseClient,
   userId: string,
   query: string,
-  opts: { memoryIds?: string[]; maxMemories?: number } = {}
+  opts: {
+    memoryIds?: string[];
+    maxMemories?: number;
+    /** 'simple' = pantalla del directivo (respuesta corta + ---detalle---). */
+    estilo?: 'simple' | 'completo';
+    /** Últimos turnos del chat, para preguntas encadenadas («¿y su hermano?»). */
+    historial?: TurnoPrevio[];
+    /** Plazo absoluto (epoch ms) de la petición. */
+    deadlineMs?: number;
+    /** Texto de la foto enviada hace un momento en el chat (aún puede no
+     *  estar guardada como memoria): entra como memoria [1]. */
+    fotoReciente?: { descripcion: string; ocr_text: string } | null;
+  } = {}
 ): Promise<AnswerResult> {
+  // Pregunta encadenada: la búsqueda y el prompt reciben los 2 últimos turnos
+  // (recortados) para saber de quién/qué se habla. Sin llamada extra al LLM.
+  const encadenada =
+    !!opts.historial?.length &&
+    (PREGUNTA_ENCADENADA.test(query) || query.trim().split(/\s+/).length < 8);
+  const contexto = encadenada
+    ? opts
+        .historial!.slice(-2)
+        .map((t) => `${t.role === 'user' ? 'Usuario' : 'Asistente'}: ${String(t.content || '').slice(0, 300)}`)
+        .join('\n')
+    : '';
   // Si el caller pasa ids explícitos, el límite lo marca su selección (hasta
   // 12, el tope del schema); si buscamos aquí, el default. Así 12 ids no se
   // truncan silenciosamente a 8.
@@ -127,6 +180,7 @@ export async function synthesizeAnswer(
     summary: string | null;
     source_type: string;
     captured_at: string;
+    source_metadata?: Record<string, unknown> | null;
   }
   let rows: Row[] = [];
 
@@ -141,7 +195,7 @@ export async function synthesizeAnswer(
     } else {
       const { data, error } = await supabase
         .from('memories')
-        .select('id, content, summary, source_type, captured_at')
+        .select('id, content, summary, source_type, captured_at, source_metadata')
         .eq('user_id', userId)
         .eq('status', 'active')
         .in('id', ids);
@@ -155,7 +209,8 @@ export async function synthesizeAnswer(
     // con una consulta de PERFIL PERSONAL (las fichas empiezan por «este usuario
     // es…»). El modelo sigue recibiendo la pregunta original.
     const sobreMi = AUTOCONOCIMIENTO.test(query);
-    const embedding = await embedOne(sobreMi ? CONSULTA_PERFIL : query, 'query');
+    const textoBusqueda = sobreMi ? CONSULTA_PERFIL : contexto ? `${contexto}\n${query}` : query;
+    const embedding = await embedOne(textoBusqueda, 'query', { deadlineMs: opts.deadlineMs });
     const { data, error } = await supabase.rpc('search_memories_filtered', {
       p_user_id: userId,
       p_query_embedding: embedding,
@@ -178,13 +233,32 @@ export async function synthesizeAnswer(
 
   // 2) Redactar. Con 0 memorias el prompt fuerza el "no lo tengo recopilado"
   //    + opinión etiquetada — exactamente el comportamiento pedido.
+  // Fotos: el resumen se queda corto para preguntas de detalle («¿qué importe
+  // pone?»): se añade el texto literal leído de la foto.
+  const textoDe = (r: Row): string => {
+    const base = r.summary || r.content || '';
+    const ocr = (r.source_metadata?.caption_raw as { ocr_text?: string } | undefined)?.ocr_text;
+    return ocr ? `${base}\nTexto de la foto: ${ocr}` : base;
+  };
+  if (opts.fotoReciente) {
+    rows.unshift({
+      id: 'foto-reciente',
+      content: '',
+      summary: `Foto que el usuario acaba de enviar: ${opts.fotoReciente.descripcion}`,
+      source_type: 'image',
+      captured_at: new Date().toISOString(),
+      source_metadata: { caption_raw: { ocr_text: opts.fotoReciente.ocr_text.slice(0, 6000) } },
+    });
+  }
   const memories = rows.map((r) => ({
-    text: r.summary || r.content || '',
+    text: textoDe(r),
     captured_at: r.captured_at,
+    largo: r.source_type === 'image',
   }));
 
-  const resp = await chat(buildUserPrompt(query, memories), {
-    system: ANSWER_SYSTEM,
+  const resp = await chat(buildUserPrompt(query, memories, contexto), {
+    system: opts.estilo === 'simple' ? ANSWER_SYSTEM + ANSWER_SYSTEM_SIMPLE : ANSWER_SYSTEM,
+    deadlineMs: opts.deadlineMs,
     temperature: 0.3,
     // Holgado: el modelo razona de forma obligatoria (~400-800 tokens) del
     // mismo presupuesto que la respuesta; con 900 el texto podía salir vacío
@@ -208,6 +282,7 @@ export async function synthesizeAnswer(
       summary: r.summary,
       source_type: r.source_type,
       captured_at: r.captured_at,
+      source_metadata: r.source_metadata ?? null,
     })),
     memories_used: rows.length,
     model_used: resp.model_used,

@@ -25,6 +25,7 @@ export async function chat(
     messages,
     temperature: opts.temperature,
     max_tokens: opts.max_tokens,
+    deadlineMs: opts.deadlineMs,
     ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
   });
 

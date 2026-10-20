@@ -80,9 +80,13 @@ export interface IngestionInput {
 
 export interface IngestionResult {
   memory_id: string;
-  decision: 'new' | 'modification' | 'redundant' | 'unclear';
+  // 'excluded' = el texto toca un tema que el usuario excluyó de su memoria
+  // (ver lib/ingestion/exclusions.ts): no se guarda nada.
+  decision: 'new' | 'modification' | 'redundant' | 'unclear' | 'excluded';
   summary: string;
   confidence: number;
+  /** Recordatorios/fechas creados a partir de esta captura. */
+  events_created?: Array<{ title: string; due_at: string; all_day: boolean; timezone: string }>;
   attached_projects?: Array<{
     project_id: string;
     slug: string;
@@ -106,6 +110,8 @@ export interface LLMCallOptions {
   max_tokens?: number;
   system?: string;
   json?: boolean;
+  /** Plazo absoluto (epoch ms) de la petición; ver callOpenRouter. */
+  deadlineMs?: number;
 }
 
 export interface LLMResponse {

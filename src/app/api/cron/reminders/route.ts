@@ -117,8 +117,10 @@ export async function GET(req: Request) {
         {
           title: pushTitle,
           body: pushBody,
-          // La UI de detalle de evento aún no existe; abrimos el timeline.
-          url: '/timeline',
+          // Abre el chat con el aviso arriba (válido para los dos modos: el
+          // middleware manda a /asistente a los usuarios simples y les borraba
+          // cualquier otra URL con su parámetro).
+          url: `/asistente?aviso=${ev.id}`,
           tag: `event-${ev.id}`,
           data: { event_id: ev.id, kind: 'reminder' },
           require_interaction: true,
@@ -140,7 +142,22 @@ export async function GET(req: Request) {
 
       // Marcar avisado tras un envío SIN excepción (aunque sent=0 por no haber
       // suscripciones: el recordatorio "ocurrió", no re-spamear cada tick).
-      await supabase.from('events').update({ notified_at: now.toISOString() }).eq('id', ev.id);
+      // Si no llegó a NINGÚN teléfono (sin dispositivos o todos fallaron), se
+      // deja constancia en metadata para poder explicarlo después.
+      const update: Record<string, unknown> = { notified_at: now.toISOString() };
+      if (res.sent === 0) {
+        update.metadata = {
+          ...((ev.metadata as Record<string, unknown>) ?? {}),
+          sin_dispositivo: true,
+          motivo_no_enviado: res.skipped_type_disabled
+            ? 'tipo_desactivado'
+            : res.failed > 0
+              ? 'envio_fallido'
+              : 'sin_dispositivo',
+        };
+        console.warn('[reminders] aviso sin entregar', ev.id, update.metadata);
+      }
+      await supabase.from('events').update(update).eq('id', ev.id);
 
       results.push({ id: ev.id, title: ev.title, type: ev.type, sent: res.sent, failed: res.failed });
     } catch (e) {

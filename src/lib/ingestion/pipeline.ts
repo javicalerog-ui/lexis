@@ -19,7 +19,8 @@ import { embedOne } from '@/lib/embeddings/voyage';
 import { classify } from '@/lib/classifier/decide';
 import { attachMemoryToProjects } from '@/lib/projects/attach';
 import { attachMemoryToEntities } from '@/lib/entities/attach';
-import { extractAndPersistEvents } from '@/lib/events/extractor';
+import { extractAndPersistEvents, type EventoCreado } from '@/lib/events/extractor';
+import { comprobarExclusion } from './exclusions';
 import type { IngestionInput, IngestionResult } from '@/types/domain';
 
 interface SummarizeOutput {
@@ -37,6 +38,20 @@ export async function ingest(
   input: IngestionInput
 ): Promise<IngestionResult> {
   const t0 = Date.now();
+
+  // 0. Temas excluidos por el usuario: no se guarda NADA (ni resumen, ni
+  //    embedding, ni eventos). Red de seguridad para cualquier canal; el
+  //    asistente ya lo comprueba antes de responder.
+  if (comprobarExclusion(input.raw_text).excluded) {
+    return {
+      memory_id: '',
+      decision: 'excluded',
+      summary: '',
+      confidence: 1,
+      attached_projects: [],
+      attached_entities: [],
+    };
+  }
 
   // 1. Resumen + extracción
   const userPrompt = `Tipo de fuente: ${input.source_type}
@@ -176,8 +191,12 @@ ${input.raw_text.slice(0, 12_000)}
   // "entrega 30-09", "piloto 2027") que NO son recordatorios del usuario; si se
   // extraen, llenan la bandeja de avisos fantasma (2026-10-13 creó 11).
   const isProjectFiche = (input.source_metadata as any)?.kind === 'project';
+  // Y en fotos del asistente: si la foto trae una fecha, el chat OFRECE el
+  // aviso (Sí/No); crearlo aquí a escondidas generaba avisos no pedidos.
+  const isAssistantPhoto = (input.source_metadata as any)?.via === 'asistente-foto';
 
-  if (!originIsCalendar && !isProjectFiche) {
+  let eventosCreados: EventoCreado[] = [];
+  if (!originIsCalendar && !isProjectFiche && !isAssistantPhoto) {
     try {
       const inferredSource =
         input.source_type === 'voice'
@@ -185,7 +204,7 @@ ${input.raw_text.slice(0, 12_000)}
           : input.source_type === 'image'
             ? 'image'
             : 'text';
-      await extractAndPersistEvents(supabase, {
+      const ext = await extractAndPersistEvents(supabase, {
         userId,
         memoryId: memory.id,
         capturedAtUtc: capturedAt ? new Date(capturedAt) : new Date(),
@@ -195,6 +214,7 @@ ${input.raw_text.slice(0, 12_000)}
         linkedEntityId: attachedEntities[0]?.entity_id ?? null,
         source: inferredSource as 'voice' | 'image' | 'text',
       });
+      eventosCreados = ext.creados ?? [];
     } catch (e) {
       console.error('[ingest] event extractor failed (non-fatal)', e);
     }
@@ -222,6 +242,7 @@ ${input.raw_text.slice(0, 12_000)}
     confidence: decision.confidence,
     attached_projects: attachedProjects,
     attached_entities: attachedEntities,
+    events_created: eventosCreados,
   } as IngestionResult;
 }
 

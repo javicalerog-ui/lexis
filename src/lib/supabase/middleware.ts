@@ -48,6 +48,12 @@ export async function updateSession(request: NextRequest) {
     pathname === '/manifest.json';
 
   if (!session && !isPublic) {
+    // Una llamada fetch a /api sin sesión no puede seguir un 302 a la página
+    // de login (el cliente recibiría HTML y mostraría «error» sin explicación):
+    // devolvemos 401 JSON para que la pantalla diga «vuelve a entrar».
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json({ error: 'session' }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
     url.searchParams.set('next', pathname);

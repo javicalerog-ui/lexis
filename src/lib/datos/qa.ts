@@ -95,6 +95,14 @@ DECIR SIEMPRE LA MODALIDAD del periodo: «en el mes», «acumulado enero-julio»
 - Si un denominador es cero o falta, di «no calculable», no inventes el ratio.
 - Si la tabla trae más de 15 filas, resume las relevantes y ofrece el detalle.`;
 
+// Pantalla del directivo (/asistente, móvil): sustituye el formato de 4 bloques.
+const RESPUESTA_SIMPLE = `
+
+MODO DIRECTIVO (se lee en un móvil; manda sobre el «Formato» de arriba):
+- Empieza por la conclusión en 1-3 frases cortas, con la cifra clave y su perímetro y periodo. Sin títulos ni negritas de sección («Conclusión», «Datos clave»…).
+- Si hay más cifras útiles, escribe una línea que sea exactamente ---detalle--- y debajo una lista corta con "- " (máximo 8 líneas; nada de tablas). La interpretación, en una frase al final del detalle, solo si aporta.
+- Sin jerga técnica ni siglas internas.`;
+
 function limpiarSql(bruto: string): string {
   let t = bruto.trim();
   t = t.replace(/^```(?:sql)?\s*/i, '');
@@ -164,7 +172,8 @@ export async function responderPreguntaDatos(
   supabase: SupabaseClient,
   pregunta: string,
   historial: TurnoChat[] | undefined,
-  userId: string
+  userId: string,
+  opts: { estilo?: 'simple' | 'completo'; deadlineMs?: number } = {}
 ): Promise<string | null> {
   // 0) ¿Qué tablas tiene concedidas este usuario?
   let concedidas: string[] = [];
@@ -202,6 +211,7 @@ export async function responderPreguntaDatos(
   try {
     const resp = await chat(conContexto(pregunta, historial), {
       system: SQL_PROMPT(esquema, fecha, anio),
+      deadlineMs: opts.deadlineMs,
       tier: 'fast',
       temperature: 0,
       // Holgado: el modelo razona de forma obligatoria y esos tokens comparten
@@ -239,7 +249,8 @@ export async function responderPreguntaDatos(
     const redac = await chat(
       `HOY ES ${fecha} (año en curso: ${anio}).${cobertura}\n\n${conContexto(pregunta, historial)}\n\nRESULTADOS:\n${tabla}`,
       {
-      system: RESPUESTA_PROMPT,
+      system: opts.estilo === 'simple' ? RESPUESTA_PROMPT + RESPUESTA_SIMPLE : RESPUESTA_PROMPT,
+      deadlineMs: opts.deadlineMs,
       tier: 'fast',
       temperature: 0,
       // Holgado: razonamiento obligatorio + respuesta de 4 bloques. Con 800 la

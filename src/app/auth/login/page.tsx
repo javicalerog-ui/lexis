@@ -1,71 +1,160 @@
 'use client';
 
-import { useState } from 'react';
+// =====================================================
+// Entrada a Lexis (L-07, 2026-10-20)
+//
+// Por defecto: email + CÓDIGO numérico (8 cifras en este proyecto; la
+// longitud la fija Supabase → Auth → Email OTP Length). Sin contraseñas que recordar y sin
+// depender de abrir un enlace en el mismo navegador (el enlace del correo se
+// abría en otra app y la sesión no quedaba en la de Lexis).
+//   1. «Enviarme un código» → Supabase manda el correo (signInWithOtp).
+//   2. Se escribe el código → verifyOtp. Sesión persistente en el teléfono.
+// El código también puede generarlo Javi (_scripts/codigo_entrada.mjs) y
+// dárselo por teléfono si el correo corporativo se come el email.
+// «Tengo una contraseña» mantiene la entrada clásica.
+// =====================================================
+
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import styles from './login.module.css';
 
-type Mode = 'password' | 'magic';
+type Modo = 'codigo' | 'password';
+type Paso = 'email' | 'codigo';
 
-// Traduce los errores más comunes de Supabase a algo humano.
-function humanError(msg: string): string {
+function errorLlano(msg: string): string {
   const m = msg.toLowerCase();
-  if (m.includes('invalid login credentials')) {
-    return 'Email o contraseña incorrectos. ¿Aún no tienes contraseña? Entra con el enlace mágico y créala en Ajustes.';
-  }
-  if (m.includes('email not confirmed')) return 'Confirma tu email primero (revisa el enlace que te enviamos).';
-  if (m.includes('rate limit')) return 'Demasiados intentos. Espera un momento y reinténtalo.';
-  return msg;
+  if (m.includes('invalid login credentials')) return 'El email o la contraseña no son correctos.';
+  if (m.includes('expired') || m.includes('invalid') || m.includes('otp'))
+    return 'Ese código no vale o ha caducado. Pide uno nuevo.';
+  if (m.includes('rate limit') || m.includes('security purposes') || m.includes('too many'))
+    return 'Has pedido varios códigos seguidos. Espera un minuto y vuelve a probar.';
+  if (m.includes('signups not allowed') || m.includes('user not found'))
+    return 'Ese email no tiene acceso a Lexis. Revisa que esté bien escrito.';
+  if (m.includes('fetch') || m.includes('network')) return 'No hay conexión. Revisa la cobertura o el wifi.';
+  return 'No he podido completar la entrada. Vuelve a intentarlo.';
 }
 
-export default function LoginPage() {
-  const [mode, setMode] = useState<Mode>('password');
+/** Solo rutas internas («/asistente»), nunca a otro dominio. */
+function destinoSeguro(next: string | null): string {
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+}
+
+function Login() {
+  const params = useSearchParams();
+  const destino = destinoSeguro(params.get('next'));
+  const [modo, setModo] = useState<Modo>('codigo');
+  const [paso, setPaso] = useState<Paso>('email');
   const [email, setEmail] = useState('');
+  const [codigo, setCodigo] = useState('');
   const [password, setPassword] = useState('');
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const [error, setError] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState<string | null>(
+    params.get('error') ? 'El enlace del correo ha caducado o ya se usó. Pide un código nuevo.' : null
+  );
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [esperaReenvio, setEsperaReenvio] = useState(0);
+  const [ayuda, setAyuda] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setStatus('sending');
-    setError(null);
-    const supabase = createClient();
-
-    if (mode === 'magic') {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        // shouldCreateUser:false — el enlace mágico NUNCA da de alta cuentas
-        // nuevas (refuerzo en código del cierre de signups del Dashboard).
-        // Con 2 usuarios reales, el alta es siempre administrada, no por login.
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          shouldCreateUser: false,
-        },
-      });
-      if (error) {
-        setStatus('error');
-        setError(humanError(error.message));
-      } else {
-        setStatus('sent');
-      }
-      return;
+  // El email se recuerda en el teléfono: al volver a entrar ya está escrito.
+  useEffect(() => {
+    try {
+      const guardado = localStorage.getItem('lexis_email');
+      if (guardado) setEmail(guardado);
+    } catch {
+      // sin almacenamiento
     }
+  }, []);
 
-    // Contraseña
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (error) {
-      setStatus('error');
-      setError(humanError(error.message));
-    } else {
-      // Sesión persistente: no habrá que volver a entrar en este dispositivo.
-      window.location.href = '/';
+  function recordarEmail() {
+    try {
+      localStorage.setItem('lexis_email', email.trim());
+    } catch {
+      // sin almacenamiento
     }
   }
 
-  const busy = status === 'sending' || status === 'sent';
+  useEffect(() => {
+    if (esperaReenvio <= 0) return;
+    const t = setTimeout(() => setEsperaReenvio((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [esperaReenvio]);
+
+  async function enviarCodigo() {
+    if (!email.trim()) return;
+    setOcupado(true);
+    setError(null);
+    setAviso(null);
+    const { error } = await createClient().auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        // Nunca da de alta cuentas nuevas: el alta es siempre administrada.
+        shouldCreateUser: false,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destino)}`,
+      },
+    });
+    setOcupado(false);
+    if (error) {
+      setError(errorLlano(error.message));
+      return;
+    }
+    setPaso('codigo');
+    setEsperaReenvio(60);
+    setAviso(`Te he enviado un código a ${email.trim()}.`);
+  }
+
+  async function entrarConCodigo() {
+    const token = codigo.replace(/\D/g, '');
+    if (!email.trim() || token.length < 6) return;
+    setOcupado(true);
+    setError(null);
+    const supabase = createClient();
+    // 'email' es el tipo actual; 'magiclink' cubre códigos generados como enlace.
+    let { error } = await supabase.auth.verifyOtp({ email: email.trim(), token, type: 'email' });
+    if (error) {
+      ({ error } = await supabase.auth.verifyOtp({ email: email.trim(), token, type: 'magiclink' }));
+    }
+    if (error) {
+      setOcupado(false);
+      setError(errorLlano(error.message));
+      return;
+    }
+    recordarEmail();
+    window.location.href = destino;
+  }
+
+  async function entrarConPassword() {
+    if (!email.trim() || !password) return;
+    setOcupado(true);
+    setError(null);
+    const { error } = await createClient().auth.signInWithPassword({ email: email.trim(), password });
+    if (error) {
+      setOcupado(false);
+      setError(errorLlano(error.message));
+      return;
+    }
+    recordarEmail();
+    window.location.href = destino;
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (modo === 'password') entrarConPassword();
+    else if (paso === 'email') enviarCodigo();
+    else entrarConCodigo();
+  }
+
+  const enlace: React.CSSProperties = {
+    background: 'none',
+    border: 'none',
+    padding: '10px 0',
+    minHeight: 44,
+    fontSize: 15.5,
+    color: 'var(--fg-1, #c8cfe0)',
+    textDecoration: 'underline',
+    cursor: 'pointer',
+    textAlign: 'left',
+  };
 
   return (
     <main className={styles.main}>
@@ -75,76 +164,50 @@ export default function LoginPage() {
           <span className={styles.brandText}>Lexis</span>
         </div>
 
-        <h1 className={styles.title}>
-          Tu memoria,
-          <br />
-          <span className={styles.gradient}>amplificada.</span>
-        </h1>
+        <h1 className={styles.title}>Entrar</h1>
 
-        <p className={styles.subtitle}>
-          {mode === 'password'
-            ? 'Entra con tu email y contraseña.'
-            : 'Introduce tu email y te enviaremos un enlace mágico para entrar.'}
+        <p className={styles.subtitle} style={{ fontSize: 16 }}>
+          {modo === 'password'
+            ? 'Escribe tu email y tu contraseña.'
+            : paso === 'email'
+              ? 'Escribe tu email y te mando un código para entrar.'
+              : 'Escribe el código que te ha llegado por correo.'}
         </p>
 
-        {/* Selector de método */}
-        <div
-          role="tablist"
-          aria-label="Método de acceso"
-          style={{
-            display: 'flex',
-            gap: 6,
-            padding: 4,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12,
-            marginBottom: 18,
-          }}
-        >
-          {(['password', 'magic'] as Mode[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="tab"
-              aria-selected={mode === m}
-              onClick={() => {
-                setMode(m);
-                setStatus('idle');
-                setError(null);
-              }}
-              style={{
-                flex: 1,
-                padding: '8px 10px',
-                borderRadius: 9,
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 13,
-                fontWeight: 600,
-                color: mode === m ? '#fff' : 'var(--fg-2, #aab2c8)',
-                background:
-                  mode === m
-                    ? 'linear-gradient(100deg, #7c5cff, #56c7f0)'
-                    : 'transparent',
-              }}
-            >
-              {m === 'password' ? 'Contraseña' : 'Enlace mágico'}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={onSubmit} className={styles.form}>
           <input
             type="email"
             required
             autoComplete="email"
+            inputMode="email"
             name="email"
             placeholder="tu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={styles.input}
-            disabled={busy}
+            style={{ fontSize: 17 }}
+            disabled={ocupado || (modo === 'codigo' && paso === 'codigo')}
           />
-          {mode === 'password' && (
+
+          {modo === 'codigo' && paso === 'codigo' && (
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9 ]*"
+              maxLength={10}
+              name="codigo"
+              placeholder="12345678"
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value)}
+              className={styles.input}
+              style={{ fontSize: 24, letterSpacing: '0.3em', textAlign: 'center' }}
+              autoFocus
+              disabled={ocupado}
+            />
+          )}
+
+          {modo === 'password' && (
             <input
               type="password"
               required
@@ -154,39 +217,96 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={styles.input}
-              disabled={busy}
+              style={{ fontSize: 17 }}
+              disabled={ocupado}
             />
           )}
+
           <button
             type="submit"
             className={styles.button}
-            disabled={busy || !email || (mode === 'password' && !password)}
+            style={{ minHeight: 48, fontSize: 17 }}
+            disabled={
+              ocupado ||
+              !email.trim() ||
+              (modo === 'password' && !password) ||
+              (modo === 'codigo' && paso === 'codigo' && codigo.replace(/\D/g, '').length < 6)
+            }
           >
-            {status === 'sending' && (mode === 'magic' ? 'Enviando…' : 'Entrando…')}
-            {status === 'sent' && 'Revisa tu email →'}
-            {(status === 'idle' || status === 'error') &&
-              (mode === 'magic' ? 'Enviar enlace' : 'Entrar')}
+            {ocupado
+              ? 'Un momento…'
+              : modo === 'password'
+                ? 'Entrar'
+                : paso === 'email'
+                  ? 'Enviarme un código'
+                  : 'Entrar'}
           </button>
         </form>
 
-        {status === 'sent' && (
-          <p className={styles.success}>
-            Si el email existe, recibirás un enlace en unos segundos.
-          </p>
-        )}
+        {aviso && !error && <p className={styles.success}>{aviso}</p>}
         {error && <p className={styles.error}>{error}</p>}
 
-        {mode === 'password' && (
-          <p className={styles.subtitle} style={{ marginTop: 14, fontSize: 12.5 }}>
-            ¿Primera vez o sin contraseña? Entra con el <b>enlace mágico</b> y créala
-            en <b>Ajustes → Contraseña</b>.
-          </p>
-        )}
-
-        <div className={styles.footer}>
-          <span>v0.1 · Sprint 1</span>
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 10 }}>
+          {modo === 'codigo' && paso === 'email' && (
+            <button type="button" style={enlace} onClick={() => (email.trim() ? setPaso('codigo') : setError('Escribe primero tu email.'))}>
+              Ya tengo un código
+            </button>
+          )}
+          {modo === 'codigo' && paso === 'codigo' && (
+            <>
+              <button
+                type="button"
+                style={{ ...enlace, opacity: esperaReenvio > 0 ? 0.6 : 1 }}
+                disabled={esperaReenvio > 0 || ocupado}
+                onClick={enviarCodigo}
+              >
+                {esperaReenvio > 0 ? `Enviar otro código (en ${esperaReenvio} s)` : 'Enviar otro código'}
+              </button>
+              <button type="button" style={enlace} onClick={() => setAyuda((v) => !v)}>
+                No me llega el correo
+              </button>
+              {ayuda && (
+                <p className={styles.subtitle} style={{ fontSize: 15, marginTop: 4 }}>
+                  Mira en la carpeta de correo no deseado. Si en un par de minutos no está, pide el código a
+                  Javi y escríbelo aquí.
+                </p>
+              )}
+              <button
+                type="button"
+                style={enlace}
+                onClick={() => {
+                  setPaso('email');
+                  setCodigo('');
+                  setAviso(null);
+                  setError(null);
+                }}
+              >
+                Cambiar el email
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            style={enlace}
+            onClick={() => {
+              setModo(modo === 'password' ? 'codigo' : 'password');
+              setError(null);
+              setAviso(null);
+            }}
+          >
+            {modo === 'password' ? 'Entrar con un código' : 'Tengo una contraseña'}
+          </button>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  // useSearchParams exige un límite de Suspense en páginas cliente.
+  return (
+    <Suspense>
+      <Login />
+    </Suspense>
   );
 }

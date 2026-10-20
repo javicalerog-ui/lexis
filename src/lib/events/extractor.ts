@@ -122,10 +122,25 @@ function isWithinWindow(dueAtUtc: Date, capturedAtUtc: Date): boolean {
  * Es side-effect: inserta filas en `events`. No bloquea el pipeline
  * si falla: lo logueamos y seguimos.
  */
+export interface EventoCreado {
+  title: string;
+  due_at: string;
+  all_day: boolean;
+  timezone: string;
+}
+
+export interface ExtractorResult {
+  inserted: number;
+  skipped: number;
+  reason?: string;
+  /** Eventos insertados, para que el asistente confirme «te aviso el…». */
+  creados?: EventoCreado[];
+}
+
 export async function extractAndPersistEvents(
   supabase: SupabaseClient,
   ctx: ExtractorContext
-): Promise<{ inserted: number; skipped: number; reason?: string }> {
+): Promise<ExtractorResult> {
   // Skip si el texto es muy corto (probablemente no tiene fecha)
   const usefulText = ctx.summary + '\n' + ctx.rawText;
   if (usefulText.trim().length < 40) {
@@ -173,6 +188,7 @@ Devuelve JSON estricto.`;
 
   let inserted = 0;
   let skipped = 0;
+  const creados: EventoCreado[] = [];
 
   for (const ev of parsed.events) {
     if (ev.confidence < 0.6) {
@@ -235,8 +251,14 @@ Devuelve JSON estricto.`;
       skipped++;
     } else {
       inserted++;
+      creados.push({
+        title: ev.title.slice(0, 240),
+        due_at: dueAt.toISOString(),
+        all_day: ev.all_day ?? false,
+        timezone: tz,
+      });
     }
   }
 
-  return { inserted, skipped };
+  return { inserted, skipped, creados };
 }

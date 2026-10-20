@@ -28,6 +28,14 @@ export interface OpenRouterOptions {
   // pedimos effort 'low' para minimizar ese gasto; aun así hay que dar
   // max_tokens con margen holgado en cada llamada.
   reasoning?: { effort?: 'low' | 'medium' | 'high'; max_tokens?: number };
+  // Enrutado de proveedor (p. ej. { zdr: true } = solo proveedores sin
+  // retención de datos; se usa para imágenes de documentos).
+  provider?: { zdr?: boolean; order?: string[]; allow_fallbacks?: boolean };
+  // Plazo ABSOLUTO (epoch ms) de la petición del usuario. Si se pasa: cada
+  // intento usa como timeout lo que quede, no se empieza un intento que no
+  // cabe y retry-after se acota a 3 s. Sin él, el comportamiento es el de
+  // siempre (3 intentos de 45 s) para no tocar al resto de la app.
+  deadlineMs?: number;
 }
 
 interface OpenRouterRaw {
@@ -48,12 +56,23 @@ export async function callOpenRouter(opts: OpenRouterOptions): Promise<{
   model: string;
   prompt_tokens: number;
   completion_tokens: number;
+  finish_reason: string;
 }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY no configurada');
 
+  const { deadlineMs, ...payload } = opts;
   let lastErr: unknown = null;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    // Con plazo: primer intento hasta 30 s, reintentos solo si quedan >= 8 s.
+    let timeoutMs = 45_000;
+    if (deadlineMs) {
+      const left = deadlineMs - Date.now();
+      if (left < (attempt === 0 ? 3_000 : 8_000)) {
+        throw new Error(`deadline: sin tiempo para el intento ${attempt + 1} de OpenRouter`);
+      }
+      timeoutMs = Math.min(attempt === 0 ? 30_000 : 20_000, left - 1_000);
+    }
     let res: Response;
     try {
       res = await fetch(OPENROUTER_ENDPOINT, {
@@ -65,12 +84,12 @@ export async function callOpenRouter(opts: OpenRouterOptions): Promise<{
           'X-Title': 'Lexis',
         },
         body: JSON.stringify({
-          ...opts,
+          ...payload,
           temperature: opts.temperature ?? 0.3,
           max_tokens: opts.max_tokens ?? 1024,
           reasoning: opts.reasoning ?? { effort: 'low' },
         }),
-        signal: AbortSignal.timeout(45_000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (e) {
       // Error de red / timeout → reintenta con backoff
@@ -84,7 +103,8 @@ export async function callOpenRouter(opts: OpenRouterOptions): Promise<{
       lastErr = new Error(`OpenRouter ${res.status}`);
       if (attempt < MAX_RETRIES - 1) {
         const retryAfter = Number(res.headers.get('retry-after')) || 0;
-        await sleep(retryAfter * 1000 || 500 * 2 ** attempt);
+        const wait = retryAfter * 1000 || 500 * 2 ** attempt;
+        await sleep(deadlineMs ? Math.min(wait, 3_000) : wait);
         continue;
       }
     }
@@ -111,6 +131,7 @@ export async function callOpenRouter(opts: OpenRouterOptions): Promise<{
       model: json.model || opts.model,
       prompt_tokens: usage.prompt_tokens ?? 0,
       completion_tokens: usage.completion_tokens ?? 0,
+      finish_reason: json.choices[0]?.finish_reason || '',
     };
   }
 

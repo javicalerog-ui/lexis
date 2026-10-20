@@ -103,37 +103,73 @@ export function capturarTurno(
     source_type: 'text',
     raw_text: texto,
     source_metadata: { via: 'asistente' },
+  }).catch(async (e) => {
+    // Un guardado fallido NO puede perderse en silencio (corre en segundo
+    // plano): queda en ingestion_log con status='failed' para reintentarlo.
+    try {
+      await supabase.from('ingestion_log').insert({
+        user_id: userId,
+        input_excerpt: texto.slice(0, 500),
+        status: 'failed',
+        error_message: String((e as Error)?.message ?? e).slice(0, 500),
+      });
+    } catch {
+      // ni el log: solo consola
+    }
+    console.error('[asistente] captura fallida', e);
+    throw e;
   });
 }
 
+// «recuérdame», «avísame», «ponme una alarma»…: el usuario espera un AVISO.
+const RX_PIDE_AVISO = /recu[eé]rda(me|melo|nos)|av[ií]sa(me|nos)|alarma|recordatorio|aviso|no se me olvide/i;
+
+/** «el martes 21 de octubre a las 9:00» en la zona del usuario. */
+export function cuandoLlano(ev: { due_at: string; all_day: boolean; timezone?: string }): string {
+  const tz = ev.timezone || 'Europe/Madrid';
+  const d = new Date(ev.due_at);
+  const dia = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz });
+  if (ev.all_day) return `el ${dia}`;
+  const hora = d.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', timeZone: tz });
+  return `el ${dia} a las ${hora}`;
+}
+
 /** Redacta la confirmación visible cuando el usuario pidió registrar. */
-export function confirmacionRegistro(result: IngestionResult): string {
+export function confirmacionRegistro(
+  result: IngestionResult,
+  opts: { texto?: string; tieneAvisos?: boolean } = {}
+): string {
+  if (result.decision === 'excluded') {
+    return 'Entendido, pero este asunto no lo guardo.';
+  }
   if (result.decision === 'redundant') {
-    return 'Eso ya lo tenía anotado de antes, así que no lo he duplicado. Si quieres matizarlo o añadir algo nuevo, dímelo.';
+    return 'Eso ya lo tenía apuntado de antes, así que no lo he duplicado. Si quieres matizarlo o añadir algo nuevo, dímelo.';
   }
 
+  // Sin jerga (2026-10-20): ni «Anotado» ni «Lo he relacionado con: …» —
+  // las relaciones con proyectos/entidades son detalle interno.
   const partes: string[] = [];
   partes.push(
     result.decision === 'modification'
-      ? 'Anotado — he actualizado lo que ya tenía sobre esto:'
-      : 'Anotado:'
+      ? 'Apuntado. He actualizado lo que ya tenía sobre esto:'
+      : 'Apuntado:'
   );
   if (result.summary) partes.push(`**${result.summary.trim()}**`);
 
-  const proyectos = (result.attached_projects || []).map((p) => p.name).filter(Boolean);
-  const entidades = (result.attached_entities || []).map((e) => e.name).filter(Boolean);
-  // Dedupe: un mismo nombre (p.ej. "Lexis") puede venir como proyecto Y como
-  // entidad a la vez — sin esto salía repetido en la confirmación.
-  const vistos = new Set<string>();
-  const etiquetas = [...proyectos, ...entidades].filter((nombre) => {
-    const clave = nombre.toLowerCase();
-    if (vistos.has(clave)) return false;
-    vistos.add(clave);
-    return true;
-  });
-  if (etiquetas.length > 0) {
-    partes.push(`Lo he relacionado con: ${etiquetas.join(', ')}.`);
+  // Avisos (L-11): decir CUÁNDO llegará; si pidió un aviso y no se entendió la
+  // fecha, decirlo en vez de dejarle creer que habrá aviso.
+  const eventos = result.events_created ?? [];
+  if (eventos.length === 1) {
+    partes.push(`Te avisaré ${cuandoLlano(eventos[0])}.`);
+  } else if (eventos.length > 1) {
+    partes.push(
+      'Te avisaré:\n' + eventos.slice(0, 5).map((e) => `- ${e.title}: ${cuandoLlano(e)}`).join('\n')
+    );
+  } else if (opts.texto && RX_PIDE_AVISO.test(opts.texto)) {
+    partes.push('No he entendido para cuándo quieres el aviso. Dime el día y la hora, por ejemplo: «recuérdamelo mañana a las 9».');
   }
-
+  if (eventos.length > 0 && opts.tieneAvisos === false) {
+    partes.push('Para que el aviso te llegue al teléfono, toca «Activar avisos» arriba.');
+  }
   return partes.join('\n\n');
 }

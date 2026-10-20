@@ -44,8 +44,9 @@ export const viewport: Viewport = {
   themeColor: '#eef1f8',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Sin bloqueo de zoom (2026-10-20): un usuario con vista cansada debe poder
+  // ampliar con dos dedos. El zoom automático de iOS al tocar un campo se evita
+  // con letra ≥16 px en los inputs, no prohibiendo ampliar.
   viewportFit: 'cover',
 };
 

@@ -38,7 +38,8 @@ export type EmbedInputType = 'document' | 'query';
  */
 export async function embed(
   texts: string[],
-  inputType: EmbedInputType = 'document'
+  inputType: EmbedInputType = 'document',
+  opts: { deadlineMs?: number } = {}
 ): Promise<number[][]> {
   if (!texts.length) return [];
 
@@ -57,20 +58,39 @@ export async function embed(
 
   // Timeout defensivo: sin él, un Voyage colgado bloquea la función serverless
   // hasta que Vercel la mata (504 no-JSON). 20s cubre de sobra un embed normal.
-  const res = await fetch(EMBED_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      input: cleaned,
-      model: MODEL,
-      input_type: inputType,
-      output_dimension: DIMENSIONS,
-    }),
-    signal: AbortSignal.timeout(20_000),
-  });
+  // Con plazo (asistente): reintento único ante 429/5xx si queda tiempo; sin
+  // plazo, un solo intento como siempre (crons, capturas, búsquedas de Javi).
+  const intentos = opts.deadlineMs ? 2 : 1;
+  let res: Response | null = null;
+  for (let intento = 0; intento < intentos; intento++) {
+    let timeoutMs = 20_000;
+    if (opts.deadlineMs) {
+      const left = opts.deadlineMs - Date.now();
+      if (left < 2_000) throw new Error('deadline: sin tiempo para el embedding');
+      timeoutMs = Math.min(20_000, left - 500);
+    }
+    res = await fetch(EMBED_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        input: cleaned,
+        model: MODEL,
+        input_type: inputType,
+        output_dimension: DIMENSIONS,
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    const transitorio = res.status === 429 || res.status >= 500;
+    if (transitorio && intento < intentos - 1) {
+      await new Promise((r) => setTimeout(r, 1_500));
+      continue;
+    }
+    break;
+  }
+  if (!res) throw new Error('Embedding sin respuesta');
 
   if (!res.ok) {
     const errText = await res.text();
@@ -97,9 +117,10 @@ export async function embed(
 
 export async function embedOne(
   text: string,
-  inputType: EmbedInputType = 'document'
+  inputType: EmbedInputType = 'document',
+  opts: { deadlineMs?: number } = {}
 ): Promise<number[]> {
-  const [vec] = await embed([text], inputType);
+  const [vec] = await embed([text], inputType, opts);
   return vec;
 }
 
