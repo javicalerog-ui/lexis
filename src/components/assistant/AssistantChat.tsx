@@ -617,7 +617,9 @@ export function AssistantChat({
         color: 'var(--fg-0)',
         overflow: 'hidden',
         // iOS: el tamaño base sigue Ajustes → Pantalla → Tamaño del texto; los
-        // textos del chat van en em. En otros navegadores la regla se ignora.
+        // textos del chat van en em. En otros navegadores la regla se ignora y
+        // queda la base de 17 px (el orden importa: font va después).
+        fontSize: 17,
         font: '-apple-system-body',
         fontFamily: 'var(--font-ui)',
       }}
@@ -699,7 +701,7 @@ export function AssistantChat({
                 {nombre ? `Hola, ${nombre}.` : 'Hola.'}
               </div>
               <div style={{ color: 'var(--fg-1)' }}>
-                Pregúntame lo que necesites, mándame una foto o pídeme que te recuerde algo. Por ejemplo:
+                Pregúntame lo que necesites, mándame una foto o pídeme que te recuerde algo. Si prefieres hablar, toca el micrófono del teclado. Por ejemplo:
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {ejemplos.map((e, k) => (
@@ -859,7 +861,7 @@ export function AssistantChat({
                   enviar();
                 }
               }}
-              placeholder="Escribe o toca el micrófono del teclado"
+              placeholder="Escribe aquí…"
               aria-label="Tu mensaje"
               rows={1}
               enterKeyHint="send"
