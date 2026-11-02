@@ -80,7 +80,7 @@ export async function callOpenRouter(opts: OpenRouterOptions): Promise<{
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
-          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://lexis-henna.vercel.app',
+          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://lexis-jade.vercel.app',
           'X-Title': 'Lexis',
         },
         body: JSON.stringify({
