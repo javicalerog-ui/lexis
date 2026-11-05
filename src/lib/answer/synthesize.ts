@@ -60,7 +60,8 @@ REGLAS INQUEBRANTABLES:
 8. Una memoria que solo registra que el usuario PREGUNTÓ o CONSULTÓ algo ("El usuario pregunta/consulta…") NO es información sobre ese tema: no la cites como prueba ni digas "anteriormente preguntaste…".
 9. Las memorias marcadas como FICHA DE REFERENCIA (empiezan por «[Ficha de …]» o «[Contexto de empresa …]») son datos de referencia fiables sobre una persona o la empresa: úsalas y cítalas como cualquier otra memoria. Dilo tal cual vienen, sin añadir relaciones que no digan («fruto de su matrimonio», etc.).
 10. Una memoria que empieza por «CORRECCIÓN DEL USUARIO» es el dato bueno: manda sobre cualquier otra memoria o ficha que diga otra cosa (si hay varias sobre el mismo dato, la más reciente). Da solo el dato corregido, nunca el antiguo como cierto, y cítala; aquí no hay contradicción que señalar (la regla 6 no se aplica). Si no trata de lo que se pregunta, ignórala y no la cites. Si preguntan qué se corrigió, cuándo o qué constaba antes, responde con su fecha y lo que consta en ella.
-11. Una memoria que empieza por «CIFRA DISCUTIDA POR EL USUARIO» NO es un dato oficial: si trata de lo preguntado, cítala y di que es lo que te dijo el usuario, sin darla por cierta. Si no, ignórala y no la cites.`;
+11. Una memoria que empieza por «CIFRA DISCUTIDA POR EL USUARIO» NO es un dato oficial: si trata de lo preguntado, cítala y di que es lo que te dijo el usuario, sin darla por cierta. Si no, ignórala y no la cites.
+12. Una memoria que empieza por «CORRECCIÓN ANTIGUA» ya la sustituyó otra posterior: nunca es el dato bueno. Úsala solo si preguntan por el historial o por el dato que corrigió («¿no era X?»): entonces di que constaba y que se corrigió, con su fecha.`;
 
 // Estilo para la pantalla del directivo (/asistente, móvil). Se AÑADE al
 // sistema base; /api/answer y /api/v1/answer (modo completo) no lo usan.
@@ -186,6 +187,7 @@ export async function synthesizeAnswer(
     source_type: string;
     captured_at: string;
     source_metadata?: Record<string, unknown> | null;
+    status?: string;
   }
   let rows: Row[] = [];
 
@@ -239,13 +241,14 @@ export async function synthesizeAnswer(
 
   // Las correcciones del usuario van siempre al contexto: si la búsqueda trae
   // la ficha con el dato viejo y no la corrección, se repetiría el error. Son
-  // pocas y cortas; la regla 10 hace que se ignoren si no vienen al caso.
+  // pocas y cortas; la regla 10 hace que se ignoren si no vienen al caso. Las ya
+  // sustituidas también: son el historial de lo que se fue corrigiendo.
   if (opts.memoryIds === undefined) {
     const { data: correcciones, error: errCorr } = await supabase
       .from('memories')
-      .select('id, content, summary, source_type, captured_at, source_metadata')
+      .select('id, content, summary, source_type, captured_at, source_metadata, status')
       .eq('user_id', userId)
-      .eq('status', 'active')
+      .in('status', ['active', 'superseded'])
       .not('source_metadata->correccion', 'is', null)
       .order('captured_at', { ascending: false })
       .limit(MAX_CORRECCIONES);
@@ -260,7 +263,7 @@ export async function synthesizeAnswer(
   // pone?»): se añade el texto literal leído de la foto.
   const textoDe = (r: Row): string => {
     const correccion = correccionDe(r.source_metadata);
-    if (correccion) return textoCorreccion(correccion);
+    if (correccion) return textoCorreccion(correccion, r.status === 'superseded');
     const base = r.summary || r.content || '';
     const ocr = (r.source_metadata?.caption_raw as { ocr_text?: string } | undefined)?.ocr_text;
     return ocr ? `${base}\nTexto de la foto: ${ocr}` : base;

@@ -69,11 +69,15 @@ export function correccionDe(metadata: unknown): CorreccionGuardada | null {
 
 /** Empieza por la marca que tratan las reglas de síntesis: el dato bueno, o
  *  una cifra discutida, que nunca pasa por oficial. */
-export function textoCorreccion(c: CorreccionGuardada): string {
+export function textoCorreccion(c: CorreccionGuardada, sustituida = false): string {
   const conversacion = (c.conversacion ?? [])
     .map((t) => `${t.role === 'user' ? 'Usuario' : 'Asistente'}: ${t.content}`)
     .join('\n');
-  const marca = c.sobre_cifras ? 'CIFRA DISCUTIDA POR EL USUARIO' : 'CORRECCIÓN DEL USUARIO';
+  const marca = sustituida
+    ? 'CORRECCIÓN ANTIGUA'
+    : c.sobre_cifras
+      ? 'CIFRA DISCUTIDA POR EL USUARIO'
+      : 'CORRECCIÓN DEL USUARIO';
   return [
     `${marca}: ${c.hecho}`,
     c.antes ? `Antes constaba: ${c.antes}` : '',

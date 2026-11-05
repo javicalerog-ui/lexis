@@ -64,6 +64,12 @@ test('una cifra discutida no lleva la marca de dato bueno', () => {
   assert.equal(t.includes('CORRECCIÓN DEL USUARIO'), false);
 });
 
+test('una correccion ya sustituida se marca como antigua', () => {
+  const t = textoCorreccion(corr, true);
+  assert.ok(t.startsWith('CORRECCIÓN ANTIGUA:'));
+  assert.ok(t.includes('Antes constaba: Gandía'));
+});
+
 test('solo reconoce metadatos con una correccion valida', () => {
   assert.equal(correccionDe(null), null);
   assert.equal(correccionDe({ via: 'asistente' }), null);
