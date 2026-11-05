@@ -221,7 +221,7 @@ export async function POST(req: Request) {
       if (res && !res.claro) {
         return {
           kind: 'correccion',
-          answer: 'No sé qué dato quieres corregir. Dímelo en una frase, por ejemplo: «Mi hijo mayor se llama Pablo».',
+          answer: 'No sé qué dato quieres corregir. Dímelo en una frase, por ejemplo: «Mi coche es un BMW, no un Audi».',
         };
       }
       if (res) {

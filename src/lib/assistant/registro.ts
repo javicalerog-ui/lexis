@@ -217,14 +217,15 @@ export function confirmacionCorreccion(
   if (result.decision === 'redundant') {
     return `Eso ya lo tenía así: **${c.para_el_usuario}**`;
   }
+  if (c.sobre_cifras) {
+    return [
+      `Lo apunto tal como me lo dices: **${c.para_el_usuario}**`,
+      'La cifra oficial sale de los datos cargados y no la cambio por mi cuenta, pero cuando la consultes te recordaré lo que me has dicho.',
+    ].join('\n\n');
+  }
   const partes = [`Corregido. A partir de ahora me quedo con esto: **${c.para_el_usuario}**`];
   if (c.antes) partes.push(`Antes tenía: ${c.antes}.`);
   if (!c.ahora) partes.push('¿Cuál es el dato bueno? Dímelo y lo dejo apuntado.');
-  if (c.sobre_cifras) {
-    partes.push(
-      'La cifra oficial sale de los datos cargados y no la cambio por mi cuenta, pero cuando la consultes te recordaré lo que me has dicho.'
-    );
-  }
   const eventos = (result.events_created ?? []).filter(
     (e) => new Date(e.due_at).getTime() > Date.now() - 60_000
   );

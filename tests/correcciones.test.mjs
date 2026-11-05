@@ -58,6 +58,12 @@ test('el texto para la sintesis lleva la marca, lo anterior y la conversacion', 
   assert.ok(t.includes('Asistente: Es de Gandía.'));
 });
 
+test('una cifra discutida no lleva la marca de dato bueno', () => {
+  const t = textoCorreccion({ ...corr, sobre_cifras: true });
+  assert.ok(t.startsWith('CIFRA DISCUTIDA POR EL USUARIO:'));
+  assert.equal(t.includes('CORRECCIÓN DEL USUARIO'), false);
+});
+
 test('solo reconoce metadatos con una correccion valida', () => {
   assert.equal(correccionDe(null), null);
   assert.equal(correccionDe({ via: 'asistente' }), null);

@@ -67,13 +67,15 @@ export function correccionDe(metadata: unknown): CorreccionGuardada | null {
   return c && typeof c.hecho === 'string' ? c : null;
 }
 
-/** Empieza por la marca que la regla de síntesis trata como dato bueno. */
+/** Empieza por la marca que tratan las reglas de síntesis: el dato bueno, o
+ *  una cifra discutida, que nunca pasa por oficial. */
 export function textoCorreccion(c: CorreccionGuardada): string {
   const conversacion = (c.conversacion ?? [])
     .map((t) => `${t.role === 'user' ? 'Usuario' : 'Asistente'}: ${t.content}`)
     .join('\n');
+  const marca = c.sobre_cifras ? 'CIFRA DISCUTIDA POR EL USUARIO' : 'CORRECCIÓN DEL USUARIO';
   return [
-    `CORRECCIÓN DEL USUARIO: ${c.hecho}`,
+    `${marca}: ${c.hecho}`,
     c.antes ? `Antes constaba: ${c.antes}` : '',
     `Sus palabras: «${c.dijo}»`,
     conversacion ? `Conversación en la que lo corrigió:\n${conversacion}` : '',
