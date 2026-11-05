@@ -31,8 +31,11 @@ import {
   capturarTurno,
   confirmacionRegistro,
   cuandoLlano,
+  resolverCorreccion,
+  confirmacionCorreccion,
 } from '@/lib/assistant/registro';
-import { prepararRespuestaSimple, type FuenteSimple } from '@/lib/assistant/citas';
+import { pareceCorreccion, correccionDe, conAvisoCifra } from '@/lib/assistant/correcciones';
+import { prepararRespuestaSimple, fechaLarga, type FuenteSimple } from '@/lib/assistant/citas';
 import { registrarEvento, type CodigoAsistente } from '@/lib/assistant/eventos';
 import { comprobarExclusion } from '@/lib/ingestion/exclusions';
 import { ingest } from '@/lib/ingestion/pipeline';
@@ -71,7 +74,7 @@ type Captura = { ok: true; result: IngestionResult } | { ok: false; result: null
 
 interface Respuesta {
   answer: string;
-  kind: 'registro' | 'datos' | 'memoria' | 'excluido' | 'foto';
+  kind: 'registro' | 'correccion' | 'datos' | 'memoria' | 'excluido' | 'foto';
   grounded?: boolean;
   fuentes?: FuenteSimple[];
   /** Solo fotos: texto leído (para seguir preguntando) y aviso que ofrecer. */
@@ -168,10 +171,19 @@ export async function POST(req: Request) {
       (result) => ({ ok: true as const, result }),
       () => ({ ok: false as const, result: null })
     );
-  // Con foto, la pregunta se guarda DENTRO de la memoria de la foto.
+  // Con foto, la pregunta se guarda DENTRO de la memoria de la foto. Una posible
+  // corrección tampoco se lanza aún: suelta («no, es X») no significaría nada.
+  const quizaCorreccion = !body.imagen && pareceCorreccion(pregunta);
   let captura: Promise<Captura> | null =
-    body.reintento || body.imagen ? null : lanzarCaptura();
+    body.reintento || body.imagen || quizaCorreccion ? null : lanzarCaptura();
   let guardadoFoto: Promise<unknown> | null = null;
+
+  const dispositivosDelUsuario = () =>
+    svc
+      .from('push_subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .then((r) => r.count ?? null, () => null);
 
   const datosAllowed = isAdmin(user) || user.app_metadata?.datos_access === true;
 
@@ -198,6 +210,42 @@ export async function POST(req: Request) {
 
   const responder = async (): Promise<Respuesta> => {
     if (body.imagen) return responderFoto(body.imagen);
+
+    if (quizaCorreccion) {
+      // La corrección se resuelve con la conversación: si esta toca un tema
+      // excluido, no sale de aquí ni se guarda.
+      if (comprobarExclusion(...historial.slice(-4).map((t) => t.content)).excluded) {
+        return { kind: 'excluido', answer: 'Entendido, pero este asunto no lo guardo.' };
+      }
+      const res = await resolverCorreccion(pregunta, historial, deadlineMs);
+      if (res && !res.claro) {
+        return {
+          kind: 'correccion',
+          answer: 'No sé qué dato quieres corregir. Dímelo en una frase, por ejemplo: «Mi hijo mayor se llama Pablo».',
+        };
+      }
+      if (res) {
+        const { correccion } = res;
+        captura = capturarTurno(svc, user.id, `Corrección del usuario: ${correccion.hecho}`, {
+          correccion,
+        }).then(
+          (result) => ({ ok: true as const, result }),
+          () => ({ ok: false as const, result: null })
+        );
+        const [c, dispositivos] = await Promise.all([captura, dispositivosDelUsuario()]);
+        return {
+          kind: 'correccion',
+          answer: c.ok
+            ? confirmacionCorreccion(c.result, correccion, {
+                tieneAvisos: dispositivos === null ? undefined : dispositivos > 0,
+              })
+            : 'Te he entendido, pero no he podido guardar la corrección. Vuelve a decírmelo en un momento, por favor.',
+        };
+      }
+      // No era una corrección: se guarda como cualquier otro turno.
+      if (!body.reintento) captura = lanzarCaptura();
+    }
+
     // (clasificarIntencion nunca lanza: ante fallo devuelve 'consulta')
     const intencion = await clasificarIntencion(pregunta);
 
@@ -205,14 +253,7 @@ export async function POST(req: Request) {
     // falló se DICE: jamás fingir que se guardó.
     if (intencion === 'registro') {
       if (!captura) captura = lanzarCaptura();
-      const [c, dispositivos] = await Promise.all([
-        captura,
-        svc
-          .from('push_subscriptions')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .then((r) => r.count ?? null, () => null),
-      ]);
+      const [c, dispositivos] = await Promise.all([captura, dispositivosDelUsuario()]);
       return {
         kind: 'registro',
         answer: c.ok
@@ -242,12 +283,24 @@ export async function POST(req: Request) {
     // «No he podido calcular eso…» (SQL fallido) cede ante una memoria que sí sabe.
     const datosFallidos = !!textoDatos && textoDatos.startsWith('No he podido calcular');
 
+    const preparada = mem ? prepararRespuestaSimple(mem.answer_md, mem.sources) : null;
+
     if (textoDatos && !(datosFallidos && mem?.grounded)) {
-      return { kind: 'datos', answer: textoDatos };
+      // La cifra oficial manda, pero si el usuario la corrigió se le recuerda.
+      const citadas = new Set(preparada?.fuentes.map((f) => f.memory_id));
+      const corregida = mem?.sources.find(
+        (s) => citadas.has(s.id) && correccionDe(s.source_metadata)?.sobre_cifras
+      );
+      const correccion = corregida && correccionDe(corregida.source_metadata);
+      return {
+        kind: 'datos',
+        answer: correccion
+          ? conAvisoCifra(textoDatos, correccion, fechaLarga(corregida.captured_at))
+          : textoDatos,
+      };
     }
-    if (mem) {
-      const { answer, fuentes } = prepararRespuestaSimple(mem.answer_md, mem.sources);
-      return { kind: 'memoria', answer, grounded: mem.grounded, fuentes };
+    if (mem && preparada) {
+      return { kind: 'memoria', answer: preparada.answer, grounded: mem.grounded, fuentes: preparada.fuentes };
     }
     throw (memoria as PromiseRejectedResult).reason;
   };

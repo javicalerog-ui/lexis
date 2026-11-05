@@ -34,7 +34,7 @@ function llano(t: string): string {
     .trim();
 }
 
-function fechaLarga(iso: string): string {
+export function fechaLarga(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('es-ES', {
       day: 'numeric',
@@ -54,7 +54,12 @@ export function prepararRespuestaSimple(
   for (const m of answer.matchAll(MARCA)) {
     for (const n of m[1].split(/\s*[,y]\s*/)) citadas.add(Number(n));
   }
-  const limpio = answer.replace(MARCA, '').replace(/[ \t]+\n/g, '\n').trim();
+  const limpio = answer
+    .replace(MARCA, '')
+    // Al quitar la marca de «Alzira**, [1].» queda «Alzira**,.»
+    .replace(/,+(\s*[.;:])/g, '$1')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
 
   const fuentes: FuenteSimple[] = [];
   sources.forEach((s, i) => {
@@ -64,7 +69,15 @@ export function prepararRespuestaSimple(
     const fecha = fechaLarga(s.captured_at);
     const imagenPath = typeof md.storage_path === 'string' ? md.storage_path : null;
 
-    if (s.source_type === 'image' || imagenPath) {
+    if (md.correccion) {
+      fuentes.push({
+        etiqueta: `Me lo corregiste el ${fecha}`,
+        texto: resumen,
+        fecha,
+        tipo: 'nota',
+        memory_id: s.id,
+      });
+    } else if (s.source_type === 'image' || imagenPath) {
       fuentes.push({
         etiqueta: `Lo leí en una foto del ${fecha}`,
         texto: resumen,

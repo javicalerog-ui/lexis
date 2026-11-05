@@ -39,10 +39,13 @@ export async function ingest(
 ): Promise<IngestionResult> {
   const t0 = Date.now();
 
+  // El rastro de una corrección lleva el dato antiguo y la conversación.
+  const { correccion, ...metadatosResumen } = input.source_metadata || {};
+
   // 0. Temas excluidos por el usuario: no se guarda NADA (ni resumen, ni
   //    embedding, ni eventos). Red de seguridad para cualquier canal; el
   //    asistente ya lo comprueba antes de responder.
-  if (comprobarExclusion(input.raw_text).excluded) {
+  if (comprobarExclusion(input.raw_text, correccion ? JSON.stringify(correccion) : '').excluded) {
     return {
       memory_id: '',
       decision: 'excluded',
@@ -53,9 +56,10 @@ export async function ingest(
     };
   }
 
-  // 1. Resumen + extracción
+  // 1. Resumen + extracción. El rastro de una corrección no entra: el resumen
+  //    debe contener solo el dato bueno.
   const userPrompt = `Tipo de fuente: ${input.source_type}
-Metadatos: ${JSON.stringify(input.source_metadata || {}).slice(0, 500)}
+Metadatos: ${JSON.stringify(metadatosResumen).slice(0, 500)}
 
 Entrada cruda:
 """
@@ -87,6 +91,7 @@ ${input.raw_text.slice(0, 12_000)}
     candidate_summary: parsed.summary_md,
     candidate_content: parsed.content_normalized,
     candidate_embedding: embedding,
+    es_correccion: !!correccion,
   });
 
   // 3.a. Redundante → no insertamos
@@ -112,6 +117,14 @@ ${input.raw_text.slice(0, 12_000)}
     };
   }
 
+  // 3.b. ¿La nueva puede sustituir a la antigua? Una ficha, una foto o una nota
+  //      larga tienen muchos datos: retirarlas por uno solo los perdería todos.
+  //      Esas siguen activas y la nueva queda enlazada como matiz.
+  const sustituye =
+    decision.decision === 'modification' && !!decision.target_memory_id
+      ? await esSustituible(supabase, userId, decision.target_memory_id)
+      : false;
+
   // 4. INSERT memory
   //    NOTA: la memoria antigua (si es 'modification') se marca superseded
   //    DESPUÉS de que este insert tenga éxito (paso 6), NO antes. Así, si el
@@ -132,7 +145,9 @@ ${input.raw_text.slice(0, 12_000)}
         ...(input.source_metadata || {}),
         llm_model: meta.model_used,
         llm_tier: meta.tier_used,
-        supersedes: decision.decision === 'modification' ? decision.target_memory_id : null,
+        supersedes: sustituye ? decision.target_memory_id : null,
+        matiza:
+          decision.decision === 'modification' && !sustituye ? decision.target_memory_id : null,
         classifier_reasoning: decision.reasoning,
       },
       embedding,
@@ -170,11 +185,13 @@ ${input.raw_text.slice(0, 12_000)}
   //    (duplicado recuperable) en vez de una memoria buena oculta para siempre.
   if (decision.decision === 'modification' && decision.target_memory_id) {
     await inheritAttachments(supabase, decision.target_memory_id, memory.id);
-    await supabase
-      .from('memories')
-      .update({ status: 'superseded' })
-      .eq('id', decision.target_memory_id)
-      .eq('user_id', userId);
+    if (sustituye) {
+      await supabase
+        .from('memories')
+        .update({ status: 'superseded' })
+        .eq('id', decision.target_memory_id)
+        .eq('user_id', userId);
+    }
   }
 
   // 6.b. Extractor de eventos (Sprint 15). No bloqueante: si falla,
@@ -220,6 +237,17 @@ ${input.raw_text.slice(0, 12_000)}
     }
   }
 
+  // 6.c. «No es a las 10, es a las 12»: con el aviso nuevo creado, el de la
+  // memoria sustituida sobra; si no, sonarían los dos.
+  if (sustituye && decision.target_memory_id && eventosCreados.length > 0) {
+    await supabase
+      .from('events')
+      .update({ status: 'cancelled' })
+      .eq('linked_memory_id', decision.target_memory_id)
+      .eq('user_id', userId)
+      .eq('status', 'pending');
+  }
+
   // 7. Log
   await supabase.from('ingestion_log').insert({
     user_id: userId,
@@ -244,6 +272,27 @@ ${input.raw_text.slice(0, 12_000)}
     attached_entities: attachedEntities,
     events_created: eventosCreados,
   } as IngestionResult;
+}
+
+const MAX_CHARS_SUSTITUIBLE = 500;
+
+async function esSustituible(
+  supabase: SupabaseClient,
+  userId: string,
+  memoryId: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('memories')
+    .select('content, source_type, source_metadata')
+    .eq('id', memoryId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  // Sin poder comprobarlo no se retira nada: duplicar es mejor que perder.
+  if (error || !data) return false;
+  const md = (data.source_metadata ?? {}) as Record<string, unknown>;
+  if (md.origen === 'ficha-referencia' || md.kind === 'project') return false;
+  if (data.source_type === 'image') return false;
+  return (data.content ?? '').length <= MAX_CHARS_SUSTITUIBLE;
 }
 
 async function inheritAttachments(

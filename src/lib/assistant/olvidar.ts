@@ -3,8 +3,8 @@
 //
 // Retira la ÚLTIMA memoria guardada desde el chat (texto o foto) en las
 // últimas 2 horas: borrado recuperable (status='deleted', como el resto de
-// la app) y cancela los avisos que se crearon a partir de ella. El propio
-// «olvida…» no se guarda.
+// la app), borra el fichero si era una foto y cancela los avisos que se crearon
+// a partir de ella. El propio «olvida…» no se guarda.
 // =====================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -42,6 +42,23 @@ export async function olvidarUltimo(svc: SupabaseClient, userId: string): Promis
     .eq('id', m.id)
     .eq('user_id', userId);
   if (e2) throw new Error(`olvidar: ${e2.message}`);
+
+  // Si era una foto, el fichero se va ya. Si esto falla, la limpieza diaria
+  // lo recoge porque su memoria queda en 'deleted'.
+  const ruta = (m.source_metadata as { storage_path?: string } | null)?.storage_path;
+  if (ruta) await svc.storage.from('lexis-raw').remove([ruta]);
+
+  // Si había sustituido a otra memoria (una corrección), la antigua vuelve:
+  // olvidar lo último no puede dejarle sin ninguno de los dos datos.
+  const sustituida = (m.source_metadata as { supersedes?: string | null } | null)?.supersedes;
+  if (sustituida) {
+    await svc
+      .from('memories')
+      .update({ status: 'active' })
+      .eq('id', sustituida)
+      .eq('user_id', userId)
+      .eq('status', 'superseded');
+  }
 
   const { data: cancelados } = await svc
     .from('events')

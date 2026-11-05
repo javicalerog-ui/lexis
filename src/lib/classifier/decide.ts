@@ -17,6 +17,7 @@ export interface ClassifierInput {
   candidate_content: string;
   candidate_embedding: number[];
   project_filter?: string | null;   // si la nueva memoria ya está asociada a un proyecto, restringe
+  es_correccion?: boolean;          // el usuario ha dicho expresamente que corrige algo
 }
 
 export interface ClassifierDecision {
@@ -62,8 +63,12 @@ export async function classify(
 
   const candidates = (neighbors ?? []) as CandidateMemory[];
 
-  // 2. Atajo: ninguna candidata cercana → 'new' sin gastar LLM
-  if (!candidates.length || candidates[0].similarity < QUICK_NEW_THRESHOLD) {
+  // 2. Atajo: ninguna candidata cercana → 'new' sin gastar LLM. En una corrección
+  //    se mira siempre: el dato bueno puede parecerse poco a una ficha larga.
+  if (
+    !candidates.length ||
+    (!input.es_correccion && candidates[0].similarity < QUICK_NEW_THRESHOLD)
+  ) {
     return {
       decision: 'new',
       target_memory_id: null,
@@ -82,7 +87,10 @@ export async function classify(
     )
     .join('\n\n');
 
-  const userPrompt = `ENTRADA NUEVA:
+  const avisoCorreccion = input.es_correccion
+    ? `AVISO: el usuario ha dicho expresamente que esta entrada CORRIGE algo que estaba mal. Si una de las memorias trata del mismo dato, la decisión es "modification" con esa memoria, aunque la entrada no repita el dato antiguo.\n\n`
+    : '';
+  const userPrompt = `${avisoCorreccion}ENTRADA NUEVA:
 """
 ${input.candidate_summary}
 
