@@ -45,21 +45,23 @@ VOCABULARIO DEL DIRECTIVO:
   mercado / destino                                            -> pais
   Italia / italianos / competencia italiana                    -> fuente='Confindustria'
   el sector / la industria española                            -> fuente='Ascer'
-- FILTRAR por país o provincia: usa la columna normal (pais, provincia, pais_filial) con el nombre tal cual: WHERE pais = 'Francia'.
-- ⚠️ Las columnas *_norm (pais_norm, provincia_norm, pais_filial_norm) están en MINÚSCULAS y SIN ACENTOS ('francia', 'mexico', 'reino unido'). Son SOLO para JOIN. Si filtras por ellas, el literal debe ir en minúsculas y sin tildes: pais_norm = 'francia' ✅ · pais_norm = 'Francia' ❌ (no encontraría nada).
-- Si dudas de cómo se escribe un país, filtra con ILIKE sobre la columna normal: WHERE pais ILIKE '%franc%'.
+- FILTRAR POR PAÍS: usa SIEMPRE la columna *_norm (pais_norm, pais_filial_norm), en minúsculas y sin tildes: WHERE pais_norm = 'belgica'. NUNCA filtres por la columna pais: cada fuente escribe el país distinto (Belgica/Bélgica, EE.UU./Estados Unidos) y perderías las filas de una fuente. Estados Unidos es pais_norm = 'estados unidos'; Corea del Sur es pais_norm = 'corea, republica de'.
+- FILTRAR POR PROVINCIA: usa ILIKE sobre la columna normal: WHERE provincia ILIKE '%valencia%'.
 - 'periodo' es AAAAMM (entero). Para comparar acumulados de fuentes distintas ALINEA el mes de corte con mes_num <= N, mirando COBERTURA TEMPORAL.
 - proveedores son COMPRAS: nunca las sumes con las tablas de venta.
 - venta_sociedad.pais_filial es el domicilio de la filial, NO el destino de la venta. Si preguntan por destino de exportación, usa venta_terceros o mercado_intl.
 - mercado_intl.fuente: 'Ascer' = exportación TOTAL del sector español (Porcelanosa incluida), 'Confindustria' = sector italiano, 'Porcelanosa' = exportación de fábrica desde España, INCLUIDA la venta a las filiales propias del extranjero.
 - ITALIA / CONFINDUSTRIA: para el sector italiano en años o semestres usa mercado_semestral (boletín oficial, dato bueno: 2025 = 4.976 M€). mercado_intl.fuente='Confindustria' es de ADUANAS y infravalora: úsala SOLO si piden un mes concreto, y avisa «dato de aduanas». Nunca compares los dos Confindustria entre sí. En mercado_semestral nunca mezcles tramos (S1, S2, Anual, T3): año completo = S1+S2 o Anual.
 - ⭐ «¿CUÁNTO VENDIMOS EN <PAÍS>?» → usa SIEMPRE la vista ventas_pais, que une los dos canales, y devuelve el TOTAL más el desglose por canal:
-  SELECT canal, round(sum(eur),2) AS eur FROM ventas_pais WHERE pais='Francia' AND anio=2025 GROUP BY ROLLUP(canal)
+  SELECT canal, round(sum(eur),2) AS eur FROM ventas_pais WHERE pais_norm='francia' AND anio=2025 GROUP BY ROLLUP(canal)
   (el ROLLUP añade la fila del total). Nunca respondas con un solo canal como si fuera la venta del país.
 - CUOTA: Porcelanosa/Ascer en mercado_intl, mismo país y periodo (y mismo mes de corte). Esa es la cuota correcta: ambas series miden lo que sale de España. NUNCA sumes venta_sociedad ni ventas_pais a la cuota: las filiales revenden la mercancía que ya compraron a fábrica y se contaría dos veces.
 - COMPARATIVA de precio medio: eur/mt2 por fuente es válido (Porcelanosa ~23 €/m² vs sector español ~10 e italiano ~16). Usa el mismo periodo para las tres.
 - SI PREGUNTA QUÉ DATOS O FUENTES TIENES (no una cifra, sino el inventario): responde con la cobertura, p. ej. SELECT tabla, fuente, periodo_min, periodo_max, filas FROM dim_cobertura ORDER BY tabla.
 - COHERENCIA EN EL SEGUIMIENTO: si la respuesta anterior salió de ventas_pais y ahora preguntan un detalle de esa misma cifra, SIGUE en ventas_pais. No te cambies a mercado_intl ni venta_terceros a media conversación: sus totales son parecidos pero NO iguales.
+- SUMAR LO QUE SE DUPLICA: si piden sumar la venta de las filiales con lo que la fábrica vende a las filiales, NO lo sumes: es la misma mercancía en dos pasos. Devuelve dos filas separadas (venta_sociedad por un lado; venta_terceros WHERE es_filial por otro), sin total.
+- MES CONCRETO EN ESPAÑA: el mercado nacional y las provincias solo tienen dato ANUAL. Si piden un mes en España, consulta el año completo en espana_provincial, sin inventar el mes.
+- DATOS QUE NO EXISTEN: si piden margen, costes, familia de producto, factura o pedido, devuelve exactamente: NO_EXISTE: <el dato pedido, en dos o tres palabras>
 
 Si la pregunta NO se puede responder con este esquema, devuelve exactamente: IMPOSIBLE
 - ⚠️ Devuelve IMPOSIBLE SIEMPRE que la pregunta sea sobre PERSONAS (familia, hijos, pareja, biografía, cargos, quién es alguien), historia o accionariado de la empresa, opiniones, recordatorios o cualquier cosa que no sea una CIFRA de estas tablas. Un nombre propio de persona NO es un cliente: no lo busques en 'cliente' ni en 'empresa' salvo que la pregunta pida explícitamente ventas o compras de ese cliente/proveedor.
@@ -82,6 +84,10 @@ Reglas:
 - El total de ventas_pais es «ventas internacionales (fuera de España) a clientes externos». NUNCA lo llames «facturación total del Grupo», «total consolidado» ni «cifra de negocio del Grupo»: no incluye España ni es contabilidad consolidada.
 - En rankings de clientes, los clientes son SOLO terceros (las filiales propias ya vienen excluidas); si hay un nombre de empresa del Grupo en la tabla, no lo presentes como cliente.
 - ⚠️ SI EL RESULTADO VIENE VACÍO: di simplemente que no has podido obtener ese dato y ofrece reformular. PROHIBIDO especular sobre POR QUÉ no hay datos ("no se han procesado operaciones", "no hay ventas en ese mercado"): un resultado vacío casi siempre significa que la consulta no encontró las filas, NO que el negocio no exista.
+- Te paso la CONSULTA EJECUTADA solo para que sepas qué periodo y qué perímetro cubren las cifras. No la cites. Si limita los meses (mes_num <= 8), di «enero-agosto» para todas las cifras, aunque alguna serie llegue más lejos: nunca digas «hasta octubre» de una cifra limitada a agosto.
+- Si la consulta usa mercado_intl con Confindustria, avisa siempre: «dato de aduanas, no del boletín oficial».
+- Si la pregunta pide un mes de España y la consulta no filtra por mes, di que solo hay dato anual y da el año.
+- Si pidieron sumar la venta de filiales y lo que la fábrica vende a filiales, di que no las sumas porque es la misma mercancía en dos pasos y se contaría dos veces, y da las dos cifras por separado.
 - Si te aviso de un desajuste de cobertura temporal, adviértelo.
 
 FORMATO NUMÉRICO (español):
@@ -208,28 +214,61 @@ export async function responderPreguntaDatos(
 
   const { fecha, anio } = hoyMadrid();
 
-  let bruto: string;
-  try {
-    const resp = await chat(conContexto(pregunta, historial), {
-      system: SQL_PROMPT(esquema, fecha, anio),
-      deadlineMs: opts.deadlineMs,
-      tier: 'fast',
-      temperature: 0,
-      // Holgado: el modelo razona de forma obligatoria y esos tokens comparten
-      // presupuesto con la salida; con 500 el SQL salía cortado a veces.
-      max_tokens: 1500,
-    });
-    bruto = resp.text;
-  } catch {
+  const generarSql = async (aviso = ''): Promise<string> => {
+    try {
+      const resp = await chat(conContexto(pregunta, historial) + aviso, {
+        system: SQL_PROMPT(esquema, fecha, anio),
+        deadlineMs: opts.deadlineMs,
+        tier: 'fast',
+        temperature: 0,
+        // Holgado: el modelo razona de forma obligatoria y esos tokens comparten
+        // presupuesto con la salida; con 500 el SQL salía cortado a veces.
+        max_tokens: 1500,
+      });
+      return limpiarSql(resp.text);
+    } catch {
+      return '';
+    }
+  };
+  // El segundo intento solo si queda plazo: la memoria va en paralelo y no debe esperar de más.
+  const quedaPlazo = () => !opts.deadlineMs || opts.deadlineMs - Date.now() > 15_000;
+  const esImposible = (s: string) => s.toUpperCase().startsWith('IMPOSIBLE');
+
+  // Sin esto, un fallo pasajero (texto vacío del modelo) acababa en la memoria
+  // y una cifra que sí existe se contestaba con «Esto no me lo has contado».
+  let sql = await generarSql();
+  if (!sql && quedaPlazo()) sql = await generarSql();
+  if (!sql || esImposible(sql)) {
     return null;
   }
 
-  const sql = limpiarSql(bruto);
-  if (!sql || sql.toUpperCase().startsWith('IMPOSIBLE')) {
-    return null;
+  // Dato inexistente: se dice claro. El prefijo «No he podido calcular» cede ante
+  // una memoria que sí lo sepa (ver /api/assistant).
+  const noExiste = /^NO_EXISTE:\s*(.+)$/is.exec(sql);
+  if (noExiste) {
+    return (
+      `No he podido calcular ${noExiste[1].trim().replace(/[.\s]+$/, '')}: ese dato no está en lo que tengo cargado. ` +
+      'Tengo ventas, metros y precio medio por país, filial, cliente y periodo.'
+    );
   }
 
-  const res = await ejecutarSqlDatos(supabase, sql, userId, permitidas);
+  let res = await ejecutarSqlDatos(supabase, sql, userId, permitidas);
+  // Consulta fallida o sin filas (casi siempre un filtro mal escrito): se le
+  // da una oportunidad más antes de rendirse.
+  if ((!res.ok || resultadoVacio(res.rows)) && quedaPlazo()) {
+    const otra = await generarSql(
+      `\n\nTU CONSULTA ANTERIOR ${res.ok ? 'NO DEVOLVIÓ NINGUNA FILA' : 'FALLÓ'}:\n${sql}\n` +
+        'Revisa los filtros: país por *_norm, en minúsculas y sin tildes; periodo y fuente existentes. ' +
+        'Si la pregunta no es una cifra de estas tablas, devuelve IMPOSIBLE.'
+    );
+    if (otra && !esImposible(otra) && !/^NO_EXISTE:/i.test(otra)) {
+      const res2 = await ejecutarSqlDatos(supabase, otra, userId, permitidas);
+      if (res2.ok && !resultadoVacio(res2.rows)) {
+        sql = otra;
+        res = res2;
+      }
+    }
+  }
   if (!res.ok) {
     return (
       'No he podido calcular eso con los datos que tengo cargados. ' +
@@ -248,7 +287,7 @@ export async function responderPreguntaDatos(
   try {
     // La fecha también al redactor: sin ella llamaba "año en curso" a 2025.
     const redac = await chat(
-      `HOY ES ${fecha} (año en curso: ${anio}).${cobertura}\n\n${conContexto(pregunta, historial)}\n\nRESULTADOS:\n${tabla}`,
+      `HOY ES ${fecha} (año en curso: ${anio}).${cobertura}\n\n${conContexto(pregunta, historial)}\n\nCONSULTA EJECUTADA:\n${sql}\n\nRESULTADOS:\n${tabla}`,
       {
       system: opts.estilo === 'simple' ? RESPUESTA_PROMPT + RESPUESTA_SIMPLE : RESPUESTA_PROMPT,
       deadlineMs: opts.deadlineMs,

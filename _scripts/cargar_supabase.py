@@ -58,6 +58,10 @@ ALIAS_PAIS = {
     "ee.uu.": "estados unidos",
     "reino unido de gran bretana e irlanda del norte": "reino unido",
     "corea del sur": "corea, republica de", "republica de corea": "corea, republica de",
+    "corea r. sur": "corea, republica de", "venezuela, bolivarian republic of": "venezuela",
+    "bielorussia": "bielorrusia", "tajikistan": "tayikistan", "papua new guinea": "papua nueva guinea",
+    "bonaire, sint eustatius and saba": "bonaire, san eustaquio y saba",
+    "wallis and futuna": "wallis y futuna", "islas wallis y futuna": "wallis y futuna",
 }
 
 
