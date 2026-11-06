@@ -83,9 +83,12 @@ export const TABLAS_ESQUEMA: Record<string, string> = {
   espana_provincial: `TABLA espana_provincial
   -- Mercado nacional ESPANOL por provincia y ano (52 provincias x 2022-2026),
   -- con Ascer y Porcelanosa en columnas paralelas (cuota provincial directa).
-  -- Solo dato ANUAL: no hay mes, no calcular YTD. HUECOS reales (son 'sin dato',
-  -- nunca cero): 2022 sin ascer_mt2; 2026 sin columnas Ascer y Porcelanosa solo
-  -- 48 de 52 provincias; ascer_eur 2022 redondeado a miles.
+  -- No hay columna de mes. AÑO EN CURSO: 2026 es un acumulado ENERO-SEPTIEMBRE,
+  -- NO un año cerrado: dilo al darlo y compara ene-sep contra ene-sep, nunca con
+  -- un año completo sin avisar. (Mantenimiento: actualizar ese mes cuando avancen
+  -- los datos de España.) Los años 2022-2025 sí son cerrados.
+  -- HUECOS reales (son 'sin dato', nunca cero): 2022 sin ascer_mt2; Porcelanosa
+  -- 2026 cubre 50 de 52 provincias; ascer_eur 2022 redondeado a miles.
     anio integer
     cod_ine integer
     provincia text

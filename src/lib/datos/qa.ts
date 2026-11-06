@@ -98,6 +98,7 @@ FORMATO NUMÉRICO (español):
 DECIR SIEMPRE LA MODALIDAD del periodo: «en el mes», «acumulado enero-julio», «año completo» o «año en curso, con los meses disponibles». Si el año está incompleto, dilo; nunca lo presentes como cerrado.
 - ⚠️ HASTA QUÉ MES LLEGAN LOS DATOS lo dice la COBERTURA TEMPORAL que te paso (periodo AAAAMM), NUNCA la fecha de hoy. Si la serie llega a 202609, di «hasta septiembre», aunque hoy sea octubre. Sin cobertura, no digas el mes de corte.
 
+- ESPAÑA, año en curso: cualquier cifra de España (nacional o provincial) de 2026 es un acumulado ENERO-SEPTIEMBRE, NO un año cerrado. Dilo con esas palabras al darla; si la comparas con otro año, usa enero-septiembre contra enero-septiembre. (Los años 2022-2025 de España sí son cerrados.)
 - Un hueco de datos NO es un cero: si algo no está, di «sin dato», no «0».
 - Si un denominador es cero o falta, di «no calculable», no inventes el ratio.
 - Si la tabla trae más de 15 filas, resume las relevantes y ofrece el detalle.`;
