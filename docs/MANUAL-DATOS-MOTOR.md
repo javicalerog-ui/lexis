@@ -12,6 +12,7 @@
 | Tabla | Javi | Silvestre | Jose María |
 |---|:-:|:-:|:-:|
 | `mercado_intl` (Ascer/Confindustria/Porcelanosa) | ✅ | ✅ | ✅ |
+| `mercado_semestral` (Ascer/Porcelanosa/Confindustria por semestre; Italia = boletín oficial) | ✅ | ✅ | ✅ |
 | `mercado_provincial` | ✅ | ✅ | ✅ |
 | `espana_provincial` | ✅ | ✅ | ✅ |
 | `venta_sociedad` (filiales propias) | ✅ | ✅ | ✅ |
@@ -71,9 +72,9 @@ Y la clave de servicio, que **nunca se escribe en el chat**:
 
 | | |
 |---|---|
-| **Alimenta** | `mercado_intl`, `mercado_provincial`, `espana_provincial`, `proveedores`, `venta_sociedad`, `venta_terceros`, `dim_cobertura`, `dim_pais` |
+| **Alimenta** | `mercado_intl`, `mercado_semestral`, `mercado_provincial`, `espana_provincial`, `proveedores`, `venta_sociedad`, `venta_terceros`, `dim_cobertura`, `dim_pais` |
 | **Carpeta** | `C:\Users\ES00500148\Desktop\Proyectos IA\05-ia-encargos-grupo\silvestre-gpts\data\` |
-| **Ficheros** | `Ascer_nac_exp_y_Confindustria.xlsx` · `España Ascer y Porcelanosa.xlsx` · `Proveedores.xlsx` · `Venta por sociedad.xlsx` · `Venta terceros.xlsx` |
+| **Ficheros** | `Ascer_nac_exp_y_Confindustria.xlsx` · `Ascer_nac_exp_y_Confindustria_SEMESTRAL.xlsx` (desde 2026-11-06) · `España Ascer y Porcelanosa.xlsx` · `Proveedores.xlsx` · `Venta por sociedad.xlsx` · `Venta terceros.xlsx` |
 | **Cadencia** | Mensual (las fuentes las recoges tú de Ximo / JC Cortés / PICOPA / SAP — ver `project-silvestre-gpts-fuentes-sop`) |
 | **Aviso automático** | Día 1 de cada mes a las 8:00 (regla `Recarga mensual datos Silvestre`) |
 
@@ -254,4 +255,4 @@ update proactive_rules set next_due_at = now() where name = '<Nombre>';
 
 - **ICB (battlecards/competencia):** bloqueado — el sistema que debe rellenarlos nunca se encendió. Se trabaja en su propia conversación (ver `03-inteligencia-competitiva\icb-vertical\docs\HOJA-DE-RUTA-BCI-2026-08-21.md`).
 - **GD:** faltan por descargar los países de la ola 1 que aún no tienen export (ver `gd-harvest\out\ola1_plan.md`).
-- **Semestral:** cuando se cierre el 6º Excel de Silvestre, añadirlo a `cargar_supabase.py`.
+- ~~Semestral~~ ✅ 2026-11-06: el 6º Excel entra en `mercado_semestral` (migración `20261106000000_mercado_semestral.sql`, pegar UNA vez en el SQL Editor antes de la primera carga; el cargador avisa y no borra nada si falta). Comprobación: Italia 2025 (Confindustria sin País «Italia», S1+S2) = 4.976 M€.

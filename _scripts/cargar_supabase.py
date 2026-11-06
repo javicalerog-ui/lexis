@@ -1,8 +1,8 @@
 """
 Motor de datos de negocio -> Supabase (schema `datos`) para Lexis.
 
-Reemplaza la salida DuckDB de clavis/build_datamart.py: lee los mismos 5 Excel
-de silvestre-gpts/data, construye las mismas tablas, y las SUBE a Supabase por
+Reemplaza la salida DuckDB de clavis/build_datamart.py: lee los 6 Excel
+de silvestre-gpts/data (el SEMESTRAL va a mercado_semestral, desde 2026-11-06), construye las mismas tablas, y las SUBE a Supabase por
 PostgREST (Postgres directo está bloqueado en la red corporativa; HTTPS sí).
 
 Requisitos (una vez):
@@ -133,6 +133,32 @@ def tabla_mercado(df):
         "eur": df.loc[es_prov, "EUR"].astype(float),
     })
     return intl.reset_index(drop=True), prov.reset_index(drop=True)
+
+
+def tabla_semestral(df):
+    """SEMESTRAL: exportacion por pais y semestre. Solo filas SIN provincia
+    (el detalle provincial ya esta en mercado_provincial / espana_provincial)."""
+    c_prov = col(df, "Provincia")
+    c_anio = col(df, "año", "Año")
+    c_tramo = col(df, "Mes 2", "Mes")
+    c_pais = col(df, "País")
+    c_fuente = col(df, "Fuente")
+    c_cod = col(df, "Cod")
+    d = df[df[c_prov].isna()]
+    out = pd.DataFrame({
+        "fuente": d[c_fuente],
+        "pais": d[c_pais],
+        "pais_norm": d[c_pais].map(norm),
+        "anio": d[c_anio].astype("Int64"),
+        "tramo": d[c_tramo].astype(str).str.strip(),
+        "cod": d[c_cod].where(d[c_cod].notna(), None),
+        "mt2": d["MT2"].astype(float),
+        "eur": d["EUR"].astype(float),
+    })
+    malos = set(out["tramo"]) - {"S1", "S2", "Anual", "T3"}
+    if malos:
+        sys.exit(f"SEMESTRAL: tramos inesperados {malos} (esperaba S1, S2, Anual, T3)")
+    return out.reset_index(drop=True)
 
 
 def tabla_espana(df):
@@ -319,6 +345,7 @@ def main():
     proveedores = tabla_proveedores(leer("Proveedores.xlsx"))
     sociedad = tabla_sociedad(leer("Venta por sociedad.xlsx"))
     terceros = tabla_terceros(leer("Venta terceros.xlsx"))
+    semestral = tabla_semestral(leer("Ascer_nac_exp_y_Confindustria_SEMESTRAL.xlsx"))
     cobertura = tabla_cobertura(intl, sociedad, terceros, proveedores, espana, provincial)
     dim_pais = tabla_dim_pais(intl, terceros, sociedad)
 
@@ -329,9 +356,20 @@ def main():
         ("proveedores", proveedores, "id=gte.0"),
         ("venta_sociedad", sociedad, "id=gte.0"),
         ("venta_terceros", terceros, "id=gte.0"),
+        ("mercado_semestral", semestral, "id=gte.0"),
         ("dim_cobertura", cobertura, "id=gte.0"),
         ("dim_pais", dim_pais, "pais_norm=not.is.null"),
     ]
+
+    # Antes de borrar NADA: que todas las tablas existan (si falta una, el cargador
+    # dejaria la base a medias).
+    for nombre, _, _ in tablas:
+        try:
+            _req("GET", f"{SUPABASE_URL}/rest/v1/{nombre}?select=*&limit=1", _headers(write=False))
+        except urllib.error.HTTPError as e:
+            sys.exit(f"La tabla datos.{nombre} no responde (HTTP {e.code}). "
+                     "Si es mercado_semestral: falta pegar supabase_migrations\\20261106000000_mercado_semestral.sql "
+                     "en el SQL Editor de Supabase. No se ha borrado nada.")
 
     for nombre, df, filtro in tablas:
         print(f"\n{nombre}: {len(df):,} filas")

@@ -28,6 +28,8 @@ export const TABLAS_ESQUEMA: Record<string, string> = {
   -- 13,6%). ***
   -- Precio medio (eur/mt2) SI es comparable entre las tres fuentes.
   -- HUECO: en Ascer NO existe julio de 2025 (agosto engloba jul+ago).
+  -- OJO: aqui 'Confindustria' es de ADUANAS (Eurostat) y infravalora la UE. Para
+  -- Italia por anio o semestre usa mercado_semestral (boletin oficial).
     fuente text
     pais text
     pais_norm text
@@ -37,6 +39,34 @@ export const TABLAS_ESQUEMA: Record<string, string> = {
     mt2 numeric
     eur numeric
     periodo integer`,
+
+  mercado_semestral: `TABLA mercado_semestral
+  -- Exportacion por pais y SEMESTRE (2023 en adelante): Ascer (sector espanol),
+  -- Porcelanosa (salida de fabrica) y Confindustria (sector italiano).
+  -- *** ITALIA / CONFINDUSTRIA: usa ESTA tabla, no mercado_intl. Aqui Confindustria
+  -- es el BOLETIN OFICIAL (dato bueno: 2025 = 4.976 M EUR); en mercado_intl es de
+  -- ADUANAS (infravalora la UE: 2025 ~4.204 M EUR). Solo si piden un MES concreto de
+  -- Italia, usa mercado_intl y avisa «dato de aduanas, no del boletin». ***
+  -- tramo = 'S1' | 'S2' | 'Anual' | 'T3' (jul-sep, solo Confindustria). NUNCA mezcles
+  -- duraciones: S1 con S1, S2 con S2, Anual con Anual. Ano completo = S1+S2 si existen
+  -- ambos, o Anual (2023 de Confindustria solo tiene Anual). 'Anual'+S1+S2 del mismo
+  -- ano nunca se suman. T3 nunca con S2 ni Anual (9 meses = S1+T3).
+  -- Exportacion de Confindustria = filas con pais distinto de 'Italia' ('Italia' =
+  -- mercado interior italiano; pais 'Espana' = lo que Italia exporta a Espana).
+  -- Para exportacion Ascer/Porcelanosa excluye pais = 'Espana'.
+  -- cod: vacio = dato completo. 'EST' = reparto por pais ESTIMADO (el total del grupo es
+  -- exacto): di «(est.)». 'PARCIAL...' = semestre incompleto: di que meses cubre y no lo
+  -- compares con uno completo.
+  -- No mezcles esta tabla con mercado_intl en una misma comparacion (sus Confindustria
+  -- difieren mucho).
+    fuente text
+    pais text
+    pais_norm text
+    anio integer
+    tramo text
+    cod text
+    mt2 numeric
+    eur numeric`,
 
   mercado_provincial: `TABLA mercado_provincial
   -- Venta ANUAL por provincia espanola (Ascer = sector, Porcelanosa = propia).

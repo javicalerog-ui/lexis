@@ -52,6 +52,7 @@ VOCABULARIO DEL DIRECTIVO:
 - proveedores son COMPRAS: nunca las sumes con las tablas de venta.
 - venta_sociedad.pais_filial es el domicilio de la filial, NO el destino de la venta. Si preguntan por destino de exportación, usa venta_terceros o mercado_intl.
 - mercado_intl.fuente: 'Ascer' = exportación TOTAL del sector español (Porcelanosa incluida), 'Confindustria' = sector italiano, 'Porcelanosa' = exportación de fábrica desde España, INCLUIDA la venta a las filiales propias del extranjero.
+- ITALIA / CONFINDUSTRIA: para el sector italiano en años o semestres usa mercado_semestral (boletín oficial, dato bueno: 2025 = 4.976 M€). mercado_intl.fuente='Confindustria' es de ADUANAS y infravalora: úsala SOLO si piden un mes concreto, y avisa «dato de aduanas». Nunca compares los dos Confindustria entre sí. En mercado_semestral nunca mezcles tramos (S1, S2, Anual, T3): año completo = S1+S2 o Anual.
 - ⭐ «¿CUÁNTO VENDIMOS EN <PAÍS>?» → usa SIEMPRE la vista ventas_pais, que une los dos canales, y devuelve el TOTAL más el desglose por canal:
   SELECT canal, round(sum(eur),2) AS eur FROM ventas_pais WHERE pais='Francia' AND anio=2025 GROUP BY ROLLUP(canal)
   (el ROLLUP añade la fila del total). Nunca respondas con un solo canal como si fuera la venta del país.
