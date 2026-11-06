@@ -85,7 +85,8 @@ Reglas:
 - En rankings de clientes, los clientes son SOLO terceros (las filiales propias ya vienen excluidas); si hay un nombre de empresa del Grupo en la tabla, no lo presentes como cliente.
 - ⚠️ SI EL RESULTADO VIENE VACÍO: di simplemente que no has podido obtener ese dato y ofrece reformular. PROHIBIDO especular sobre POR QUÉ no hay datos ("no se han procesado operaciones", "no hay ventas en ese mercado"): un resultado vacío casi siempre significa que la consulta no encontró las filas, NO que el negocio no exista.
 - Te paso la CONSULTA EJECUTADA solo para que sepas qué periodo y qué perímetro cubren las cifras. No la cites. Si limita los meses (mes_num <= 8), di «enero-agosto» para todas las cifras, aunque alguna serie llegue más lejos: nunca digas «hasta octubre» de una cifra limitada a agosto.
-- Si la consulta usa mercado_intl con Confindustria, avisa siempre: «dato de aduanas, no del boletín oficial».
+- Sobre Italia, di el origen del dato solo como te lo indique la línea ORIGEN DEL DATO DE ITALIA; si no te la paso, no menciones aduanas ni boletín.
+- Si la consulta es un ranking sin filtro de país, di que es «en todos los países».
 - Si la pregunta pide un mes de España y la consulta no filtra por mes, di que solo hay dato anual y da el año.
 - Si pidieron sumar la venta de filiales y lo que la fábrica vende a filiales, di que no las sumas porque es la misma mercancía en dos pasos y se contaría dos veces, y da las dos cifras por separado.
 - Si te aviso de un desajuste de cobertura temporal, adviértelo.
@@ -125,12 +126,28 @@ function conContexto(pregunta: string, historial?: TurnoChat[]): string {
     return `${quien}: ${String(m.content ?? '').slice(0, 400)}`;
   });
   return (
-    'CONVERSACIÓN PREVIA (para resolver referencias como «y el año pasado», ' +
-    '«por marcas», «¿y en volumen?»; si la pregunta nueva no menciona país, ' +
-    'periodo o filtro, ARRASTRA los de la pregunta anterior):\n' +
+    'CONVERSACIÓN PREVIA. Hereda país, periodo o filtro SOLO si la pregunta actual ' +
+    'es una continuación: incompleta o con una referencia («¿y el año pasado?», ' +
+    '«por marcas», «¿y en volumen?», «¿y Alemania?», «de ese país»). Una pregunta ' +
+    'completa por sí misma empieza de cero y NO hereda el país: «dame los 3 mayores ' +
+    'clientes de 2025» es de TODOS los países aunque antes se hablara de otro:\n' +
     lineas.join('\n') +
     `\n\nPREGUNTA ACTUAL: ${pregunta}`
   );
+}
+
+/**
+ * El origen del dato de Italia lo decide la consulta, no el modelo: el redactor
+ * llegó a etiquetar como «aduanas» una cifra sacada del boletín oficial.
+ */
+export function origenItalia(sql: string): string {
+  if (!/confindustria/i.test(sql)) return '';
+  const aduanas = /\bmercado_intl\b/i.test(sql);
+  const boletin = /\bmercado_semestral\b/i.test(sql);
+  if (aduanas === boletin) return '';
+  return aduanas
+    ? '\n\nORIGEN DEL DATO DE ITALIA: aduanas. Avísalo con estas palabras: «dato de aduanas, no del boletín oficial».'
+    : '\n\nORIGEN DEL DATO DE ITALIA: boletín oficial. No digas que es dato de aduanas.';
 }
 
 function hoyMadrid(): { fecha: string; anio: number } {
@@ -288,7 +305,7 @@ export async function responderPreguntaDatos(
   try {
     // La fecha también al redactor: sin ella llamaba "año en curso" a 2025.
     const redac = await chat(
-      `HOY ES ${fecha} (año en curso: ${anio}).${cobertura}\n\n${conContexto(pregunta, historial)}\n\nCONSULTA EJECUTADA:\n${sql}\n\nRESULTADOS:\n${tabla}`,
+      `HOY ES ${fecha} (año en curso: ${anio}).${cobertura}\n\n${conContexto(pregunta, historial)}\n\nCONSULTA EJECUTADA:\n${sql}${origenItalia(sql)}\n\nRESULTADOS:\n${tabla}`,
       {
       system: opts.estilo === 'simple' ? RESPUESTA_PROMPT + RESPUESTA_SIMPLE : RESPUESTA_PROMPT,
       deadlineMs: opts.deadlineMs,
