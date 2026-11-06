@@ -2,7 +2,7 @@
   "name": "Lexis · Segundo cerebro",
   "short_name": "Lexis",
   "description": "Tu segundo cerebro personal. Captura, vectoriza y razona sobre tu vida.",
-  "start_url": "/",
+  "start_url": "/asistente",
   "scope": "/",
   "display": "standalone",
   "background_color": "#060812",
@@ -33,10 +33,10 @@
   ],
   "shortcuts": [
     {
-      "name": "Captura rápida",
-      "short_name": "Captura",
-      "description": "Abre la pantalla principal de captura",
-      "url": "/",
+      "name": "Preguntar a Lexis",
+      "short_name": "Preguntar",
+      "description": "Abre el asistente",
+      "url": "/asistente",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
